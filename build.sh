@@ -31,7 +31,8 @@ done
 # Priority:
 #   1. CRUSH80_KEYMAP env var (explicit path to a .keymap file)
 #   2. Dotfiles directory (~/.config/DOTFILES/keybindings/crush80-zmk/)
-#   3. Repo default (keymaps/example.keymap — full HRM layout)
+#   3. The existing zmk/boards/crush80/crush80.keymap, left untouched
+#   4. Repo default (keymaps/example.keymap — full HRM layout), only if (3) is missing
 DOTFILES_ZMK="${CRUSH80_ZMK_CONFIG:-$HOME/.config/DOTFILES/keybindings/crush80-zmk}"
 
 if [ -n "${CRUSH80_KEYMAP:-}" ] && [ -f "$CRUSH80_KEYMAP" ]; then
@@ -45,8 +46,12 @@ elif [ -d "$DOTFILES_ZMK" ]; then
     echo "Syncing config from $DOTFILES_ZMK..."
     [ -f "$DOTFILES_ZMK/crush80.keymap" ] && cp "$DOTFILES_ZMK/crush80.keymap" "$REPO_DIR/zmk/boards/crush80/crush80.keymap"
     [ -f "$DOTFILES_ZMK/app.conf" ] && cp "$DOTFILES_ZMK/app.conf" "$REPO_DIR/conf/app.conf"
+elif [ -f "$REPO_DIR/zmk/boards/crush80/crush80.keymap" ]; then
+    # Never overwrite an existing board keymap: it is the file people edit in place, and
+    # copying example.keymap over it silently destroyed uncommitted keymap work.
+    echo "Using zmk/boards/crush80/crush80.keymap as is (set CRUSH80_KEYMAP to override)"
 elif [ -f "$REPO_DIR/keymaps/example.keymap" ]; then
-    echo "No custom keymap configured — using keymaps/example.keymap"
+    echo "No keymap configured — using keymaps/example.keymap"
     cp "$REPO_DIR/keymaps/example.keymap" "$REPO_DIR/zmk/boards/crush80/crush80.keymap"
 fi
 

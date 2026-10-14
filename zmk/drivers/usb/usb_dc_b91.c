@@ -71,7 +71,8 @@ static struct usb_dc_b91_state state;
 
 #define USB_SRAM_SIZE 256
 
-static uint8_t usb_sram_next;  /* next free byte in USB SRAM (bump allocator) */
+static uint16_t usb_sram_next; /* next free byte in USB SRAM (bump allocator); 16-bit so
+				* a pool filled to exactly 256 B doesn't wrap to 0 */
 
 /* ========================================================================== *
  *  USB Diagnostic Event Ring                                                  *
@@ -1428,7 +1429,8 @@ int usb_dc_ep_configure(const struct usb_dc_ep_cfg_data *const cfg)
 				cfg->ep_addr, state.ep[n].sram_addr,
 				(uint16_t)state.ep[n].sram_addr + buf_size);
 		} else {
-			uint8_t alloc_end = usb_sram_next + buf_size;
+			/* 16-bit: an 8-bit sum wraps past 255 and defeats the check below */
+			uint16_t alloc_end = usb_sram_next + buf_size;
 
 			if (alloc_end > USB_SRAM_SIZE) {
 				LOG_ERR("EP 0x%02x: USB SRAM exhausted! need %u, "
@@ -1439,13 +1441,13 @@ int usb_dc_ep_configure(const struct usb_dc_ep_cfg_data *const cfg)
 				return -ENOMEM;
 			}
 
-			usb_write8(B91_USB_EP_BUF_ADDR(n), usb_sram_next);
+			usb_write8(B91_USB_EP_BUF_ADDR(n), (uint8_t)usb_sram_next);
 			LOG_INF("EP 0x%02x: USB SRAM [%u..%u) (%uB %s)",
 				cfg->ep_addr, usb_sram_next,
 				(uint16_t)usb_sram_next + buf_size, buf_size,
 				is_out ? "OUT" : "IN");
 			diag_ev(B91_DIAG_EP_CFG, cfg->ep_addr, usb_sram_next);
-			state.ep[n].sram_addr = usb_sram_next;
+			state.ep[n].sram_addr = (uint8_t)usb_sram_next;
 			state.ep[n].sram_size = buf_size;
 			usb_sram_next = alloc_end;
 		}

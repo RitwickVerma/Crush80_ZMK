@@ -29,7 +29,7 @@ static volatile uint32_t s_bat_until;
 
 void rrgb_overlay_set_caps(bool on)        { s_caps = on; }
 void rrgb_overlay_set_fn(bool active)      { s_fn = active; }
-void rrgb_overlay_set_battery(uint8_t pct) { s_battery = pct; }
+void rrgb_overlay_set_battery(uint8_t pct) { s_battery = pct > 100 ? 100 : pct; }
 void rrgb_overlay_battery_show(uint32_t tick) { s_bat_until = tick + BAT_SHOW_FRAMES; }
 
 bool rrgb_overlay_active(uint32_t tick) {

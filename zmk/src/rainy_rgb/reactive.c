@@ -34,6 +34,11 @@ void rrgb_reactive_on_press(uint32_t position, uint32_t tick) {
 void rrgb_reactive_tick(uint32_t tick) {
     (void)tick;
     uint32_t head = q_head;          /* snapshot once */
+    /* Presses queue even while nothing renders (RGB off, strip blanked), so the producer can lap
+     * the consumer; drop the overwritten (stale) entries rather than replaying garbage slots. */
+    if ((uint32_t)(head - q_tail) > PRESS_Q_SIZE) {
+        q_tail = head - PRESS_Q_SIZE;
+    }
     while (q_tail != head) {
         struct press_evt e = press_q[q_tail & PRESS_Q_MASK];
         q_tail++;

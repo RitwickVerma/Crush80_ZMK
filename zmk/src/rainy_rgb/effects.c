@@ -83,7 +83,9 @@ void fx_ripple(struct rgb_frame *f) {
     for (uint8_t r = 0; r < f->ripple_count; r++) {
         const struct rrgb_ripple *rp = &f->ripples[r];
         if (!rp->active) { continue; }
-        int radius = ((int)(f->tick - rp->start_tick) * vel_q4) >> 4;
+        uint32_t age = f->tick - rp->start_tick;
+        if (age > 4095u) { continue; }                /* long faded; also keeps age*vel_q4 in int range */
+        int radius = ((int)age * vel_q4) >> 4;
         if (radius >= RIPPLE_FADER) { continue; }     /* faded out */
         uint8_t fade = (uint8_t)(255 - radius);       /* older/bigger = dimmer */
         for (uint16_t i = 0; i < f->n; i++) {

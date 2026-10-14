@@ -213,8 +213,11 @@ static int flash_mgmt_erase(struct smp_streamer *ctxt)
 		ZCBOR_MAP_DECODE_KEY_DECODER("len", zcbor_uint32_decode, &len),
 	};
 
+	/* Every key is required: zcbor leaves absent keys at their initial 0, so a request
+	 * missing "off" would otherwise erase/write at flash offset 0 (the bootloader). */
 	if (zcbor_map_decode_bulk(zsd, decode_map, ARRAY_SIZE(decode_map),
-				  &decoded) != 0) {
+				  &decoded) != 0 ||
+	    decoded != ARRAY_SIZE(decode_map)) {
 		return MGMT_ERR_EINVAL;
 	}
 
@@ -262,8 +265,11 @@ static int flash_mgmt_write(struct smp_streamer *ctxt)
 		ZCBOR_MAP_DECODE_KEY_DECODER("data", zcbor_bstr_decode, &data),
 	};
 
+	/* Every key is required: zcbor leaves absent keys at their initial 0, so a request
+	 * missing "off" would otherwise erase/write at flash offset 0 (the bootloader). */
 	if (zcbor_map_decode_bulk(zsd, decode_map, ARRAY_SIZE(decode_map),
-				  &decoded) != 0) {
+				  &decoded) != 0 ||
+	    decoded != ARRAY_SIZE(decode_map)) {
 		return MGMT_ERR_EINVAL;
 	}
 
@@ -301,8 +307,11 @@ static int flash_mgmt_read(struct smp_streamer *ctxt)
 		ZCBOR_MAP_DECODE_KEY_DECODER("len", zcbor_uint32_decode, &len),
 	};
 
+	/* Every key is required: zcbor leaves absent keys at their initial 0, so a request
+	 * missing "off" would otherwise erase/write at flash offset 0 (the bootloader). */
 	if (zcbor_map_decode_bulk(zsd, decode_map, ARRAY_SIZE(decode_map),
-				  &decoded) != 0) {
+				  &decoded) != 0 ||
+	    decoded != ARRAY_SIZE(decode_map)) {
 		return MGMT_ERR_EINVAL;
 	}
 
@@ -355,8 +364,11 @@ static int flash_mgmt_commit(struct smp_streamer *ctxt)
 		ZCBOR_MAP_DECODE_KEY_DECODER("len", zcbor_uint32_decode, &len),
 	};
 
+	/* Every key is required: zcbor leaves absent keys at their initial 0, so a request
+	 * missing "off" would otherwise erase/write at flash offset 0 (the bootloader). */
 	if (zcbor_map_decode_bulk(zsd, decode_map, ARRAY_SIZE(decode_map),
-				  &decoded) != 0) {
+				  &decoded) != 0 ||
+	    decoded != ARRAY_SIZE(decode_map)) {
 		return MGMT_ERR_EINVAL;
 	}
 
@@ -369,6 +381,12 @@ static int flash_mgmt_commit(struct smp_streamer *ctxt)
 	uint32_t erase_end = (len + (FLASH_SECTOR_SIZE - 1))
 			     & ~(FLASH_SECTOR_SIZE - 1);
 	if (erase_end > FLASH_PROTECTED_START) {
+		return MGMT_ERR_EINVAL;
+	}
+
+	/* The trampoline erases whole sectors below stg, so an unaligned stg would
+	 * destroy the head of the staged image before it is copied. */
+	if ((stg % FLASH_SECTOR_SIZE) != 0) {
 		return MGMT_ERR_EINVAL;
 	}
 

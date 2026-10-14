@@ -44,6 +44,9 @@ void usb_status_cb(enum usb_dc_status_code status, const uint8_t *params);
 #define RECOVER_HOLDOFF_MS (10 * 60 * 1000)
 
 static int64_t last_recover_at = -RECOVER_HOLDOFF_MS;
+/* last_recover_at as it stood before the current trigger overwrote it: the
+ * repeat-failure test needs the PREVIOUS recovery, not this one. */
+static int64_t prev_recover_at = -RECOVER_HOLDOFF_MS;
 static uint32_t recover_count;
 
 /* Saved-ring blob: u32 seq, u32 count, then count b91_usb_diag_evt records.
@@ -180,7 +183,7 @@ static void recover_work_cb(struct k_work *work)
 	 *    HID dead; observed needing a physical replug).
 	 * Warm reset via the B91 PWDN register (same mechanism as
 	 * flash_mgmt's trampoline) — ~2 s through MCUboot. */
-	bool repeat_failure = (k_uptime_get() - last_recover_at) <
+	bool repeat_failure = (k_uptime_get() - prev_recover_at) <
 			      (15 * 60 * 1000) && recover_count > 0;
 
 	recover_count++;
@@ -213,6 +216,7 @@ void b91_usb_cdc_starved(void)
 		LOG_WRN("CDC starved again within holdoff; skipping");
 		return;
 	}
+	prev_recover_at = last_recover_at;
 	last_recover_at = now;
 	k_work_reschedule(&recover_work, K_NO_WAIT);
 }
