@@ -172,7 +172,7 @@ static int wdt_b91_feed(const struct device *dev, int channel_id)
 	return 0;
 }
 
-static int wdt_b91_init(const struct device *dev)
+static int __maybe_unused wdt_b91_init(const struct device *dev)
 {
 	/* Disable watchdog at boot — app will enable via install_timeout + setup */
 	wdt_b91_disable(dev);

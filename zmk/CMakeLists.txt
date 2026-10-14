@@ -6,7 +6,6 @@ add_subdirectory_ifdef(CONFIG_USB_DC_B91 drivers/usb)
 add_subdirectory_ifdef(CONFIG_BT_HCI_B91 drivers/bluetooth)
 add_subdirectory_ifdef(CONFIG_BATTERY_B91_ADC drivers/sensor)
 add_subdirectory_ifdef(CONFIG_WDT_B91 drivers/watchdog)
-add_subdirectory_ifdef(CONFIG_AW20216S drivers/led)
 add_subdirectory_ifdef(CONFIG_LED_STRIP_B91_SPI drivers/led_strip)
 
 if(CONFIG_BT_HCI_B91)
@@ -43,10 +42,6 @@ if(CONFIG_USB_DC_B91 AND CONFIG_ZMK_USB)
   zephyr_library_sources(src/usb_cdc_recover.c)
 endif()
 
-if(CONFIG_CRUSH80_RGB)
-  zephyr_library_named(crush80_rgb)
-  zephyr_library_sources(src/crush80_rgb.c)
-endif()
 
 if(CONFIG_RAINY_RGB)
   zephyr_library_named(rainy_rgb)

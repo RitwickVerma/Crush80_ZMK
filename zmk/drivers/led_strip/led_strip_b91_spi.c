@@ -28,19 +28,19 @@
 LOG_MODULE_REGISTER(led_strip_b91, LOG_LEVEL_INF);
 
 /* Analog register access — needed for PC2 IE and pull-up config during init. */
-static void analog_wait(void)
+static void __maybe_unused analog_wait(void)
 {
 	while (sys_read8(B91_ANALOG_CTRL_REG) & B91_ANALOG_CTRL_BUSY) {
 	}
 }
 
-static void analog_wait_txbuf(void)
+static void __maybe_unused analog_wait_txbuf(void)
 {
 	while (!(sys_read8(B91_ANALOG_BUF_CNT_REG) & B91_ANALOG_TX_BUFCNT)) {
 	}
 }
 
-static uint8_t led_analog_read(uint8_t addr)
+static uint8_t __maybe_unused led_analog_read(uint8_t addr)
 {
 	unsigned int key = irq_lock();
 	sys_write8(addr, B91_ANALOG_ADDR_REG);
@@ -52,7 +52,7 @@ static uint8_t led_analog_read(uint8_t addr)
 	return val;
 }
 
-static void led_analog_write(uint8_t addr, uint8_t data)
+static void __maybe_unused led_analog_write(uint8_t addr, uint8_t data)
 {
 	unsigned int key = irq_lock();
 	sys_write8(addr, B91_ANALOG_ADDR_REG);
