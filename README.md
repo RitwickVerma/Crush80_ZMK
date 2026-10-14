@@ -1,185 +1,136 @@
-# Crush 80 ZMK Firmware
+<div align="center">
 
-Custom ZMK firmware for the Wobkey Crush 80 mechanical keyboard (Telink TLSR9518/B91 RISC-V).
+# Wobkey Crush 80 · ZMK
+
+**Open-source firmware for the Wobkey Crush 80 (Reboot Pro) mechanical keyboard.**
+Replaces the closed vendor firmware with [ZMK](https://zmk.dev): USB, Bluetooth,
+154 per-key RGB LEDs, OpenRGB, ZMK Studio, and one-cable updates.
+
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Firmware: ZMK](https://img.shields.io/badge/firmware-ZMK-6c4aa3.svg)](https://zmk.dev)
+[![RTOS: Zephyr 4.1](https://img.shields.io/badge/RTOS-Zephyr%204.1-2c5aa0.svg)](https://www.zephyrproject.org)
+[![MCU: Telink TLSR9511](https://img.shields.io/badge/MCU-Telink%20TLSR9511-orange.svg)](docs/hardware.md)
+[![Arch: RISC-V](https://img.shields.io/badge/arch-RISC--V-283272.svg)](docs/hardware.md)
+[![RGB: 154 LEDs](https://img.shields.io/badge/RGB-154%20LEDs%20%C2%B7%20OpenRGB-ff3d7f.svg)](#features)
+[![Status: daily driver](https://img.shields.io/badge/status-daily%20driver-success.svg)](#status)
+
+![Wobkey Crush 80](docs/images/hero.jpg)
+
+</div>
+
+## Why
+
+The Crush 80 ships with a proprietary firmware from Evision Semiconductor that
+only *imitates* VIA. It runs on a **Telink TLSR9511**, a RISC-V Bluetooth SoC
+that QMK does not support, so "just flash QMK" is impossible. ZMK runs on
+Zephyr, and Zephyr runs on this chip. This repository is the board port, the
+drivers it needed, and the tooling to get it onto a stock keyboard without
+opening it.
 
 ## Features
 
-- Full ZMK support: USB HID, Bluetooth 5.0, MCUboot DFU
-- MCUmgr firmware updates over USB serial (no special hardware needed)
-- Stock QWERTY keymap included (ready to flash out of the box)
-- Example advanced keymap with Home Row Mods, Nav/Sym layers, Mac mode
+- **Full keyboard over USB and Bluetooth LE**: 88-key ANSI matrix, three
+  Bluetooth profiles, USB/BLE output switching, deep sleep with key wakeup.
+- **154 per-key RGB LEDs**: WS2812-class chain driven by SPI + DMA, with the
+  `rainy_rgb` engine (12 effects, reactive ripples and heatmap, Caps Lock and
+  battery indicators) and on-keyboard controls.
+- **OpenRGB**: direct per-LED control from [OpenRGB](https://openrgb.org) over a
+  raw HID interface (QMK OpenRGB protocol), so the keyboard joins your desktop
+  lighting.
+- **ZMK Studio**: remap keys live from the browser over USB.
+- **One-cable install** from the stock firmware, via its own update protocol.
+- **Safe updates**: Fn+Esc drops to the MCUboot bootloader, `update.sh` flashes
+  in about 11 seconds, a bad image never boots.
+- **Mac mode** (Fn+M) and an advanced home-row-mods keymap in `keymaps/`.
 
-## Quick Start (New User)
-
-### 1. Set up the build environment
-
-```bash
-git clone https://github.com/Adam-Yung/Crush80_ZMK.git
-cd Crush80_ZMK
-bash setup.sh
-```
-
-This installs: Zephyr SDK, west, Python dependencies, Go mcumgr, and initializes the build workspace. Takes ~10 minutes on first run.
-
-### 2. Build firmware
+## Quick start
 
 ```bash
-bash build.sh --skip-bridge --skip-mcuboot
+git clone https://gitlab.com/ritwick7/crush80-zmk.git && cd crush80-zmk
+bash setup.sh                     # Zephyr SDK, west workspace, Python deps (~10 min)
+sudo cp udev/99-wobkey-crush80.rules /etc/udev/rules.d/ && sudo udevadm trigger
+bash build.sh --build-mcuboot     # -> dist/
 ```
 
-This builds the ZMK firmware using the stock keymap. Output: `dist/crush80-zmk-app.signed.bin`
+| Your keyboard runs | Do this |
+|---|---|
+| Stock Wobkey firmware | `bash install_zmk.sh` |
+| This firmware | **Fn+Esc**, then `bash update.sh` |
+| Something broken | [Recovery](docs/flashing.md#recovery) |
 
-### Pre-built Firmware
+Full instructions, including recovery and going back to stock:
+**[docs/flashing.md](docs/flashing.md)**.
 
-If you don't want to build from source, use the pre-built release:
+> [!WARNING]
+> Flashing third-party firmware can leave the keyboard unusable until it is
+> reflashed. The tools never touch the factory calibration and Bluetooth MAC
+> area, and MCUboot refuses to boot a bad image, but keep a second keyboard
+> nearby the first time.
 
-| File | Description |
-|------|-------------|
-| `releases/Crush80-No-RGB.bin` | Default firmware — no RGB, battery optimized, 5 BT profiles, Mac mode |
+## Keymap
 
-Flash a pre-built release:
-```bash
-CRUSH80_FIRMWARE=releases/Crush80-No-RGB.bin bash update.sh
-# Then unplug/replug
-```
+| Fn + | Action | Fn + | Action |
+|---|---|---|---|
+| Esc | Bootloader (update mode) | 1 / 2 / 3 | Bluetooth profile |
+| F1 / F2 | Screen brightness | 4 | USB output |
+| F3 / F4 / F5 | Previous / play / next | 5 | Toggle USB / Bluetooth |
+| F6 / F7 / F8 | Mute / volume | Ins | Clear Bluetooth pairing |
+| F12 | Unlock ZMK Studio | M | Mac mode |
+| Backspace | RGB on / off | ScrLk | Native (pass-through) layer |
+| \ or Enter | Next RGB effect | ↑ / ↓ | RGB brightness |
 
-### 3. Install ZMK on a stock Crush 80
+The board keymap is [`zmk/boards/crush80/crush80.keymap`](zmk/boards/crush80/crush80.keymap).
+Edit it directly, point `CRUSH80_KEYMAP` at your own file, or remap live in
+[ZMK Studio](https://zmk.studio).
 
-If your keyboard is still running the manufacturer firmware:
+## Inside the keyboard
 
-```bash
-bash install_zmk.sh
-```
+| | |
+|---|---|
+| ![PCB](docs/images/pcb-back.jpg) | ![TLSR9511](docs/images/mcu-tlsr9511.jpg) |
+| The full PCB: 154 LED footprints, MCU top left | Telink TLSR9511 with its 24 MHz crystal |
 
-This uses the OTA bridge method to replace the stock firmware with ZMK. To revert, use `python3 scripts/flash_mgmt_upload.py` with the stock firmware binary.
+Pinout, LED chain, flash map and stock-firmware notes:
+**[docs/hardware.md](docs/hardware.md)**.
 
-### 4. Update firmware (keyboard already running ZMK)
+## Status
 
-```bash
-bash update.sh --build
-```
+| | |
+|---|---|
+| Typing, USB, Bluetooth, sleep | Working, daily use |
+| Per-key RGB, OpenRGB, ZMK Studio over USB | Working |
+| Updates (Fn+Esc → `update.sh`) | Working |
+| 2.4 GHz dongle | Not supported: proprietary protocol, no open implementation exists |
+| Battery percentage | Reads; scaling not yet calibrated on this board |
 
-Or if you've already built:
-
-```bash
-bash update.sh
-```
-
-After upload completes, **unplug the keyboard USB cable, wait 2 seconds, plug back in**. MCUboot swaps to the new firmware on cold boot.
-
-## Emergency Recovery (Bricked Keyboard)
-
-> **Symptom**: Keyboard stops typing ~2 seconds after plug-in. `mcumgr image upload` stalls or fails. USB device may enumerate but SMP commands timeout.
-
-> **Cause**: Firmware bug where `irq_lock()` + unbounded busy-wait (`while (REG & BIT) {}`) creates a permanent system hang. All interrupts are masked, so USB, BLE, and kscan all die simultaneously.
-
-### Fix: Force MCUboot Serial Recovery
-
-```bash
-# Step 1: With keyboard plugged in (even if hung), run:
-python3 scripts/force_recovery.py
-
-# Step 2: UNPLUG the keyboard, wait 2 seconds, REPLUG
-# MCUboot enters serial recovery mode (no app runs — no hang!)
-
-# Step 3: Upload known-good firmware:
-PORT=$(python3 -c "import glob; p=glob.glob('/dev/cu.usbmodem*') or glob.glob('/dev/ttyACM*'); print(p[0] if p else '')")
-~/go/bin/mcumgr --conntype serial --connstring "dev=$PORT,baud=115200" \
-  image upload dist/crush80-zmk-app.signed.MACMODE-WORKING.bin
-
-# Step 4: Unplug, wait 2 seconds, replug — keyboard boots normally
-```
-
-### How It Works
-
-The firmware includes a custom `flash_mgmt` MCUmgr group (ID 64) that can erase flash sectors. `force_recovery.py` erases the slot 0 image header (address 0x10000, 4096 bytes). MCUboot is configured with `CONFIG_BOOT_SERIAL_NO_APPLICATION=y`, so when it sees no valid app header, it enters permanent serial recovery mode over USB. From there, firmware can be uploaded with no time pressure because no application code is running.
-
-### Why Normal Recovery Doesn't Work
-
-The normal `mcumgr image upload` requires the running app's SMP handler to process each upload chunk. When the system hangs 2 seconds after boot, only a few chunks transfer before the irq_lock deadlock kills everything. The `force_recovery.py` script only needs to send ONE small erase command within that 2-second window — which reliably succeeds.
-
----
-
-## Keymap Configuration
-
-### Available keymaps
-
-| File | Description |
-|------|-------------|
-| `keymaps/stock.keymap` | Standard QWERTY + Fn layer (BT/USB controls). Default. |
-| `keymaps/example.keymap` | Advanced: Home Row Mods, Nav/ExtNav, Sym, Mac mode (9 layers) |
-
-### Using a custom keymap
-
-Set the `CRUSH80_KEYMAP` environment variable before building:
-
-```bash
-export CRUSH80_KEYMAP=/path/to/my/crush80.keymap
-bash build.sh --skip-bridge --skip-mcuboot
-bash update.sh
-```
-
-### Keymap selection priority
-
-1. `CRUSH80_KEYMAP` env var (explicit path to a `.keymap` file)
-2. Dotfiles directory (`~/.config/DOTFILES/keybindings/crush80-zmk/`)
-3. `keymaps/stock.keymap` (default)
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `CRUSH80_KEYMAP` | Path to `.keymap` file to use for build |
-| `CRUSH80_APP_CONF` | Path to `app.conf` to use for build |
-| `CRUSH80_FIRMWARE` | Path to `.signed.bin` for `update.sh` (skips build) |
-| `CRUSH80_ZMK_CONFIG` | Path to config directory (contains `crush80.keymap` + `app.conf`) |
-
-## Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `setup.sh` | One-time environment setup (SDK, west, mcumgr) |
-| `build.sh` | Build ZMK firmware from source |
-| `update.sh` | Flash firmware onto a running ZMK keyboard |
-| `install_zmk.sh` | First-time install from stock manufacturer firmware |
-| `fetch_ble_blob.sh` | Download Telink BLE binary blob |
-| `scripts/force_recovery.py` | **EMERGENCY**: Force MCUboot recovery when system is hung |
-| `scripts/flash_mgmt_upload.py` | Write firmware to flash in 256-byte chunks (for bricked keyboards) |
-| `scripts/flash_ota.py` | Stage 1 OTA flash for initial ZMK install |
-| `scripts/recovery_flash.py` | Recovery flash when SMP is unresponsive |
-| `scripts/emergency_upload.py` | Power-cycle upload for hung firmware |
-
-## Recovery
-
-If the keyboard stops responding after a bad flash:
-
-1. **Unplug and replug** — MCUboot auto-reverts if the new firmware doesn't confirm within 11 seconds
-2. **Force MCUboot recovery** — `python3 scripts/force_recovery.py` (erases slot 0 header, forces MCUboot serial recovery on next boot)
-3. **nRF Connect Device Manager** — Install on phone, connect via BLE, tap "Reset to firmware loader mode"
-4. **Recovery flash** — `python3 scripts/recovery_flash.py` (unplug, run script, replug when prompted)
-5. **Restore stock** — `python3 scripts/flash_mgmt_upload.py firmware/Wobkey_Crush_80_Patched_Firmware/firmware/v2_patched.bin`
-
-## Project Structure
+## Repository layout
 
 ```
-keymaps/                Custom keymap files (stock.keymap, example.keymap)
-conf/                   Build configuration (app.conf, mcuboot.conf)
-zmk/                    ZMK module (board def, drivers, DTS, source)
-  boards/crush80/       Board definition (DTS, defconfig, matrix)
-  drivers/              Platform drivers (USB, BLE, battery, watchdog, LED)
-  src/                  Application source (boot_diag, flash_mgmt, etc.)
-scripts/                Flashing and diagnostic tools
-patches/                Zephyr and ZMK patches for B91 platform
-docs/                   Technical documentation
-dist/                   Built firmware artifacts (gitignored)
+zmk/              ZMK module: board (DTS, keymap), drivers (USB, BLE, LED strip,
+                  battery, watchdog), rainy_rgb engine, OpenRGB, flash management
+conf/             build configuration (app, MCUboot, install bridge)
+patches/          fixes to Zephyr, ZMK, MCUboot and hal_telink, applied by setup.sh
+keymaps/          stock and home-row-mods keymaps
+scripts/          dfu.py (updates), force_recovery.py, OTA + install tools
+docs/             hardware notes, flashing and recovery guide, photos
 ```
 
-## Technical Notes
+## Credits
 
-- MCU: Telink TLSR9518 (B91 RISC-V), 48 MHz, 128KB ILM + 128KB DLM, 1MB flash
-- Matrix: 6 rows x 16 columns, col2row diode direction, 88 keys
-- Flash layout: MCUboot (0x0-0x10000), App (0x10000-0x80000), Slot1 (0x80000-0xF0000)
-- BLE: Telink proprietary blob (`liblt_9518_zephyr.a`)
-- MCUboot swap requires **physical USB unplug/replug** (cold boot) — software reset alone does NOT trigger swap
-- NEVER set `CONFIG_LOG_DEFAULT_LEVEL=4` (floods serial, bricks SMP)
-- HSPI is disabled — PE0/PE1/PE2 are shared between matrix columns and LED SPI
+- **[Adam Yung](https://github.com/Adam-Yung/Crush80_ZMK)**: the original ZMK port
+  of the Crush 80. This repository is a fork with history preserved.
+- **[scholzri / rainy75-zmk](https://github.com/scholzri/rainy75-zmk)**: the port
+  and reverse engineering of the sibling Wobkey Rainy 75 Pro, which supplied the
+  Telink B91 drivers, the RGB engine and the patches.
+- [ZMK](https://zmk.dev), [Zephyr](https://zephyrproject.org) and
+  [MCUboot](https://www.trustedfirmware.org/projects/mcuboot/).
+
+## License
+
+[Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for provenance and
+third-party components. The Telink Bluetooth controller library is proprietary:
+it is downloaded at build time and is not part of this repository, and firmware
+images built with it must not be redistributed (which is why there are no
+prebuilt releases).
+
+This is an independent project, not affiliated with Wobkey, Telink or Evision.

@@ -37,3 +37,14 @@ __pycache__/
 *.swp
 *~
 firmware/
+
+# Vendor firmware, dumps and decompiled tooling: never commit (proprietary)
+*.bin
+*.exe
+*.hex
+*.elf
+decompiled/
+.DS_Store
+.cursor/
+.claude/
+.serena/

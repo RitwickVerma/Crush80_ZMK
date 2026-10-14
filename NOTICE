@@ -1,0 +1,53 @@
+Wobkey Crush 80 — ZMK firmware
+Copyright 2026 Ritwick Verma
+
+Licensed under the Apache License, Version 2.0 (see the LICENSE file).
+
+================================================================================
+Credits and provenance
+================================================================================
+
+This repository builds on the work of others:
+
+  Adam Yung and contributors      https://github.com/Adam-Yung/Crush80_ZMK
+    The original ZMK port of the Crush 80: board definition, build, install and
+    update scripts, keymaps, the first USB/BLE bring-up. This repository is a
+    fork of it (history preserved). The upstream repository carries no license
+    file; its authors retain copyright in their contributions.
+
+  scholzri                        https://github.com/scholzri/rainy75-zmk
+    ZMK port and reverse engineering of the sibling Wobkey Rainy 75 Pro (same
+    Telink TLSR9511 platform): the B91 USB, Bluetooth, WS2812 LED-strip,
+    battery and watchdog drivers, the rainy_rgb lighting engine, the flash
+    management group and the upstream patches. Apache-2.0.
+
+================================================================================
+Third-party components fetched at build time (NOT included in this repository)
+================================================================================
+
+  ZMK Firmware   MIT          https://github.com/zmkfirmware/zmk
+  Zephyr RTOS    Apache-2.0   https://github.com/zephyrproject-rtos/zephyr
+  MCUboot        Apache-2.0   https://github.com/mcu-tools/mcuboot
+  hal_telink     Apache-2.0   https://github.com/zephyrproject-rtos/hal_telink
+    (fetched by `west`, per zmk/west.yml)
+
+  Telink B91 Bluetooth LE controller library, liblt_9518_zephyr.a
+    Source:    https://github.com/telink-semi/zephyr_hal_telink_b91_ble_lib
+    Copyright (c) Telink Semiconductor (Shanghai) Co., Ltd.
+    License:   PROPRIETARY, not redistributable. This repository does NOT
+               contain it: fetch_ble_blob.sh downloads it at build time from
+               Telink's public repository. Firmware images built with it embed
+               the library and must not be redistributed.
+
+================================================================================
+Intentionally NOT included
+================================================================================
+
+The official Wobkey firmware and updater, firmware dumps, decompiled vendor
+tools and the vendor VIA definitions are excluded (and were removed from this
+repository's history). They are copyright of their owners (Wobkey, Telink,
+Evision Semiconductor). Findings derived from them are documented as original
+prose under docs/ for interoperability.
+
+This is an independent, unofficial project, not affiliated with or endorsed by
+Wobkey, Telink or Evision.
