@@ -29,7 +29,7 @@ opening it.
 
 ## Features
 
-- **Full keyboard over USB and Bluetooth LE**: 88-key ANSI matrix, three
+- **Full keyboard over USB and Bluetooth LE**: 86-key ANSI matrix, three
   Bluetooth profiles, USB/BLE output switching, deep sleep with key wakeup.
 - **154 per-key RGB LEDs**: WS2812-class chain driven by SPI + DMA, with the
   `rainy_rgb` engine (12 effects, reactive ripples and heatmap, Caps Lock and

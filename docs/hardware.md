@@ -13,7 +13,7 @@ hardware.
 |---|---|
 | MCU | **Telink TLSR9511** (B91 family): RISC-V RV32IMAC + Andes V5 extensions, 48 MHz, 1 MB flash, 128 KB ILM + 128 KB DLM SRAM |
 | Crystal | 24 MHz |
-| Matrix | 6 rows × 16 columns, col2row, 88 keys (ANSI) |
+| Matrix | 6 rows × 16 columns, col2row, 86 keys (ANSI) |
 | LEDs | 154 addressable RGB LEDs (SK6812 MINI-E style), one daisy chain |
 | Battery | Li-ion; voltage read on PD1 through a 1/2 divider (as on the Rainy 75; not yet calibrated on this board) |
 | Radios | USB-C (full speed), Bluetooth LE 5, proprietary 2.4 GHz (dongle) |
@@ -53,7 +53,7 @@ Each LED footprint has four pads labelled **DI / DO / V / G**: data in, data
 out, supply, ground, i.e. a WS2812-style daisy chain rather than an LED-matrix
 driver. The chain is driven from **PB7** (the PSPI MOSI pin) with SPI-encoded
 WS2812 timing and DMA, GRB colour order; **PC2** switches LED power through a
-MOSFET. 88 LEDs sit under the keys; the rest light the side bar and logo.
+MOSFET. One LED sits under each key; the rest light the side bar and logo.
 
 > Early analysis of the stock firmware concluded the LEDs were driven by two
 > AW20216S matrix controllers on HSPI (PE0-PE2). The PCB disproved that: those

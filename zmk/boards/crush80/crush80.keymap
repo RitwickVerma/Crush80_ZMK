@@ -35,7 +35,7 @@
 
 /*
  * Key position indices for hold-trigger-key-positions (bilateral HRM).
- * Derived from the matrix transform in crush80.dts (88 total positions, 0-indexed).
+ * Derived from the matrix transform in crush80.dts (86 total positions, 0-indexed).
  *
  * Row 0 (F-row):     0-15    (ESC F1-F12 PrtSc ScrLk Pause)
  * Row 1 (numbers):   16-32   (` 1-0 - = Bspc | Ins Home PgUp)

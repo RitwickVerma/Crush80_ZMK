@@ -14,11 +14,11 @@
  * MCU: Telink TLSR9511 (B91, RISC-V)
  *   CONFIRMED: USB descriptor string at firmware offset 0x1DB20 reads "TLSR9511"
  *
- * LEDs: 154 addressable WS2812/SK6812 (88 per-key + side bar + logo), one chain on
+ * LEDs: 154 addressable WS2812/SK6812 (one per key + side bar + logo), one chain on
  *   PB7 (PSPI MOSI) driven by telink,b91-spi-led-strip; PC2 gates LED power.
  *   Verified from PCB photos (DI/DO/V/G pads per LED) and on hardware.
  *
- * Matrix: 6 rows x 16 cols, col2row, 88 keys (ANSI). Pin assignments match the
+ * Matrix: 6 rows x 16 cols, col2row, 86 keys (ANSI). Pin assignments match the
  *   sibling Rainy 75 Pro (scholzri/rainy75-zmk) and are verified on hardware.
  */
 
@@ -71,7 +71,7 @@
 	/*
 	 * Matrix transform: 6 rows x 16 cols
 	 * Derived from firmware/Crush80-RGB-USB.JSON matrix positions.
-	 * 88 keys total (ANSI layout).
+	 * 86 keys total (ANSI layout).
 	 *
 	 * Row 0: ESC F1  F2  F3  F4  | F5  F6  F7  F8  | F9  F10 F11 F12 | PrtSc ScrLk Pause
 	 * Row 1: `   1   2   3   4   5  6   7   8   9   0   -   =  BSP  | Ins  Home  PgUp
@@ -296,7 +296,7 @@
 
 	led_strip: ws2812 {
 		compatible = "telink,b91-spi-led-strip";
-		/* 154 LEDs total (88 per-key + side bar + logo), SK6812, GRB order.
+		/* 154 LEDs total (one per key + side bar + logo), SK6812, GRB order.
 		 * Data = PB7 (PSPI MOSI), 6 MHz. Power = PC2 (MOSFET, active-high). */
 		chain-length = <154>;
 		color-mapping = <LED_COLOR_ID_GREEN
