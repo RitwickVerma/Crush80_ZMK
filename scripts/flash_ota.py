@@ -658,7 +658,7 @@ def main():
         print("  - Is it in USB mode (not Bluetooth/2.4G)?")
         print("  - Use --list to see available HID devices")
         if sys.platform == 'linux':
-            print("  - Check udev rules: sudo cp docs/99-wobkey-crush80.rules /etc/udev/rules.d/")
+            print("  - Check udev rules: sudo cp udev/99-wobkey-crush80.rules /etc/udev/rules.d/")
         sys.exit(1)
 
     ota_dev = OTADevice(dev_info)

@@ -1,8 +1,10 @@
 # Python dependencies for Crush 80 ZMK firmware tooling
 # Install with: pip3 install --break-system-packages -r requirements.txt
 
-# Zephyr build tool
+# Zephyr build tool. Zephyr v4.1 does not configure with CMake 4.x.
 west>=1.5.0
+cmake>=3.20,<4
+ninja
 
 # ELF file parsing (required by west and Zephyr build system)
 pyelftools>=0.29
@@ -16,3 +18,7 @@ grpcio-tools
 
 # HID device access for OTA firmware flashing (cross-platform: Linux/macOS/Windows)
 hidapi>=0.14.0
+
+# Serial SMP + CBOR for the install bridge (scripts/flash_combined.py)
+pyserial
+cbor2

@@ -1,155 +1,156 @@
 #!/usr/bin/env python3
+"""Force a Crush 80 into MCUboot USB recovery over Bluetooth.
+
+For when Fn+Esc does not reach the bootloader (for example an older image
+without the binding). Over the paired Bluetooth link this erases ONE 4 KB
+sector: the header of the running image (flash 0x10000, via the firmware's
+flash_mgmt group). Nothing else is touched. On the next power-up MCUboot finds
+no valid image and stays in USB recovery, where scripts/dfu.py flashes a new
+one.
+
+    python3 scripts/force_recovery.py            # keyboard must be paired and connected
+    python3 scripts/force_recovery.py --backup slot0.signed.bin   # read the running image first
+
+The keyboard does not type between this step and the next flash, so keep a
+second keyboard at hand. --backup reads the running image (read only) so it can
+be flashed back with dfu.py.
+
+Linux only (BlueZ over D-Bus). Requires: pip install dbus-fast cbor2
 """
-Corrupt slot 0 image header to force MCUboot into serial recovery mode.
 
-This sends ONE tiny flash_mgmt erase command (group 64, cmd 0) to erase
-the first sector of slot 0 (address 0x10000). After this, MCUboot will
-see no valid application and enter serial recovery on next boot.
-
-Then you can upload new firmware at leisure with no time pressure:
-  mcumgr --conntype serial --connstring "dev=/dev/cu.usbmodem1101,baud=115200" image upload firmware.signed.bin
-
-Usage:
-  1. Plug in keyboard
-  2. Run: python3 scripts/force_recovery.py
-  3. Unplug, wait 2s, replug
-  4. MCUboot enters recovery (no app runs)
-  5. Upload new firmware with mcumgr normally
-"""
-
-import sys
-import os
-import glob
+import argparse
+import asyncio
 import struct
-import base64
-import time
-
-try:
-    import serial
-except ImportError:
-    os.system(f"{sys.executable} -m pip install pyserial -q")
-    import serial
+import sys
 
 try:
     import cbor2
+    from dbus_fast import BusType, Message, MessageType, Variant
+    from dbus_fast.aio import MessageBus
 except ImportError:
-    os.system(f"{sys.executable} -m pip install cbor2 -q")
-    import cbor2
+    sys.exit("Requires: pip install dbus-fast cbor2")
+
+SMP_UUID = "da2e7828-fbce-4e01-ae9e-261174997c48"   # standard mcumgr SMP characteristic
+FLASH_MGMT = 64                                        # custom group, zmk/src/flash_mgmt.c
+CMD_ERASE, CMD_READ = 0, 2
+SLOT0 = 0x10000
+IMAGE_MAGIC = 0x96F3B83D
 
 
-def crc16_ccitt(data):
-    crc = 0x0000
-    for b in data:
-        crc ^= b << 8
-        for _ in range(8):
-            if crc & 0x8000:
-                crc = (crc << 1) ^ 0x1021
-            else:
-                crc <<= 1
-            crc &= 0xFFFF
-    return crc
+async def call(bus, path, iface, member, sig="", body=()):
+    reply = await bus.call(Message(destination="org.bluez", path=path, interface=iface,
+                                   member=member, signature=sig, body=list(body),
+                                   message_type=MessageType.METHOD_CALL))
+    if reply.message_type == MessageType.ERROR:
+        raise RuntimeError(f"{member}: {reply.body}")
+    return reply.body
 
 
-def build_smp_frame(op, group, cmd_id, payload_dict):
-    """Build a complete SMP serial frame."""
-    cbor_data = cbor2.dumps(payload_dict)
-    
-    # SMP header: op(1) flags(1) len(2) group(2) seq(1) cmd_id(1)
-    header = struct.pack("!BBHHBB", op, 0, len(cbor_data), group, 0, cmd_id)
-    msg = header + cbor_data
-    
-    # CRC
-    crc = crc16_ccitt(msg)
-    pkt = struct.pack(">H", len(msg) + 2) + msg + struct.pack(">H", crc)
-    
-    # Base64 encode
-    b64 = base64.b64encode(pkt)
-    
-    # Frame with SMP serial markers
-    frame = b"\x06\x09" + b64 + b"\n"
-    return frame
+class Smp:
+    """mcumgr SMP over BlueZ GATT (notify + write-without-response)."""
+
+    def __init__(self, bus, char):
+        self.bus, self.char = bus, char
+        self.buf = bytearray()
+        self.done = asyncio.Event()
+
+    def _on_signal(self, msg):
+        if (msg.message_type == MessageType.SIGNAL and msg.member == "PropertiesChanged"
+                and msg.path == self.char and len(msg.body) > 1 and "Value" in msg.body[1]):
+            self.buf += bytes(msg.body[1]["Value"].value)
+            if len(self.buf) >= 8 and len(self.buf) >= 8 + struct.unpack(">H", self.buf[2:4])[0]:
+                self.done.set()
+
+    async def start(self):
+        self.bus.add_message_handler(self._on_signal)
+        await self.bus.call(Message(
+            destination="org.freedesktop.DBus", path="/org/freedesktop/DBus",
+            interface="org.freedesktop.DBus", member="AddMatch", signature="s",
+            body=[f"type='signal',interface='org.freedesktop.DBus.Properties',"
+                  f"member='PropertiesChanged',path='{self.char}'"],
+            message_type=MessageType.METHOD_CALL))
+        await call(self.bus, self.char, "org.bluez.GattCharacteristic1", "StartNotify")
+
+    async def request(self, op, group, cmd, body, timeout=10):
+        self.buf.clear()
+        self.done.clear()
+        payload = cbor2.dumps(body)
+        pkt = struct.pack(">BBHHBB", op, 0, len(payload), group, 0, cmd) + payload
+        for i in range(0, len(pkt), 20):                       # fits the default ATT MTU
+            await call(self.bus, self.char, "org.bluez.GattCharacteristic1", "WriteValue",
+                       "aya{sv}", [pkt[i:i + 20], {"type": Variant("s", "command")}])
+        await asyncio.wait_for(self.done.wait(), timeout)
+        resp = cbor2.loads(bytes(self.buf[8:8 + struct.unpack(">H", self.buf[2:4])[0]]))
+        if resp.get("rc", 0):
+            raise RuntimeError(f"device error {resp}")
+        return resp
 
 
-def main():
-    # Find port
-    ports = glob.glob('/dev/cu.usbmodem*')
-    if not ports:
-        print("ERROR: No keyboard found. Plug it in first.")
-        sys.exit(1)
-    
-    port = ports[0]
-    print(f"=== FORCE MCUboot RECOVERY MODE ===")
-    print(f"Port: {port}")
-    print(f"")
-    print(f"This will erase the slot 0 image header at 0x10000.")
-    print(f"After next power cycle, MCUboot will enter serial recovery.")
-    print(f"")
-    
-    # Build the erase command: flash_mgmt group 64, cmd 0 (erase)
-    # Erase one sector (4096 bytes) at offset 0x10000 (slot 0 start)
-    payload = {"off": 0x10000, "len": 4096}
-    frame = build_smp_frame(op=2, group=64, cmd_id=0, payload_dict=payload)
-    
-    print(f"Sending flash_mgmt erase command (off=0x10000, len=4096)...")
-    
-    # Open serial and send
+async def find_keyboard(bus, address):
+    objs = (await call(bus, "/", "org.freedesktop.DBus.ObjectManager", "GetManagedObjects"))[0]
+    found = []
+    for path, ifaces in objs.items():
+        dev = ifaces.get("org.bluez.Device1")
+        if not dev or not dev.get("Connected", Variant("b", False)).value:
+            continue
+        if address and dev["Address"].value.upper() != address.upper():
+            continue
+        chars = [p for p, i in objs.items() if p.startswith(path + "/")
+                 and i.get("org.bluez.GattCharacteristic1", {}).get("UUID", Variant("s", "")).value
+                 == SMP_UUID]
+        if chars:
+            found.append((dev.get("Name", Variant("s", "?")).value, dev["Address"].value, chars[0]))
+    if not found:
+        sys.exit("No connected keyboard with an SMP service. Pair it, connect it, and "
+                 "switch its output to Bluetooth (unplug USB) first.")
+    if len(found) > 1:
+        sys.exit("Several candidates; pick one with --address: "
+                 + ", ".join(f"{n} {a}" for n, a, _ in found))
+    return found[0]
+
+
+async def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--address", help="Bluetooth address of the keyboard")
+    ap.add_argument("--backup", metavar="FILE", help="read the running image to FILE first")
+    ap.add_argument("--yes", action="store_true", help="do not ask for confirmation")
+    args = ap.parse_args()
+
+    bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
+    name, addr, char = await find_keyboard(bus, args.address)
+    print(f"Keyboard: {name} ({addr})")
+    smp = Smp(bus, char)
+    await smp.start()
+
+    head = (await smp.request(0, FLASH_MGMT, CMD_READ, {"off": SLOT0, "len": 32}))["data"]
+    magic, _, hdr_size, _, img_size = struct.unpack_from("<IIHHI", head)
+    if magic != IMAGE_MAGIC:
+        sys.exit("No valid image header at 0x10000: already in recovery state? Nothing done.")
+
+    if args.backup:
+        want = hdr_size + img_size + 4            # body + TLV info header; extended below
+        data = bytearray()
+        while len(data) < want:
+            n = min(256, want - len(data))
+            data += (await smp.request(0, FLASH_MGMT, CMD_READ,
+                                       {"off": SLOT0 + len(data), "len": n}))["data"]
+            if len(data) == hdr_size + img_size + 4:
+                want = hdr_size + img_size + struct.unpack_from("<H", data, hdr_size + img_size + 2)[0]
+            print(f"\r  backup {100 * len(data) // want:3d} %", end="", flush=True)
+        open(args.backup, "wb").write(data[:want])
+        print(f"\n  saved {want} B to {args.backup}")
+
+    if not args.yes and input("Erase the running image's header and drop to USB recovery? "
+                              "[y/N] ").strip().lower() != "y":
+        sys.exit("Aborted, nothing changed.")
     try:
-        s = serial.Serial(port, 115200, timeout=3)
-        s.dtr = True
-        time.sleep(0.2)
-        
-        # Drain any pending data
-        s.reset_input_buffer()
-        
-        # Send the erase command
-        s.write(frame)
-        s.flush()
-        
-        # Wait for response (look for SMP frame in response)
-        time.sleep(1)
-        response = s.read(4096)
-        s.close()
-        
-        # Check if we got any SMP response
-        if b"\x06\x09" in response:
-            # Try to parse the response
-            idx = response.index(b"\x06\x09")
-            nl = response.find(b"\n", idx)
-            if nl > idx:
-                frame_b64 = response[idx + 2:nl]
-                try:
-                    raw = base64.b64decode(frame_b64)
-                    pkt_len = struct.unpack(">H", raw[0:2])[0]
-                    smp_msg = raw[2:2 + pkt_len - 2]
-                    cbor_data = smp_msg[8:]
-                    resp = cbor2.loads(cbor_data)
-                    rc = resp.get("rc", -1)
-                    if rc == 0:
-                        print(f"SUCCESS! Erase command accepted (rc=0).")
-                    else:
-                        print(f"WARNING: Got response rc={rc}")
-                except Exception as e:
-                    print(f"Got SMP response (couldn't fully parse: {e})")
-                    print(f"This likely means the command was received.")
-        else:
-            print(f"No clear SMP response detected in {len(response)} bytes.")
-            print(f"The command may still have been processed.")
-        
-        print(f"")
-        print(f"=== NEXT STEPS ===")
-        print(f"1. UNPLUG the keyboard, wait 2 seconds")
-        print(f"2. REPLUG — MCUboot should enter serial recovery")
-        print(f"   (keyboard won't type — this is expected!)")
-        print(f"3. Upload new firmware:")
-        print(f"   ~/go/bin/mcumgr --conntype serial --connstring \\")
-        print(f"     \"dev={port},baud=115200\" image upload \\")
-        print(f"     dist/crush80-zmk-app.signed.MACMODE-WORKING.bin")
-        print(f"4. After upload completes, unplug/replug to boot new firmware")
-        
-    except Exception as e:
-        print(f"ERROR: {e}")
-        sys.exit(1)
+        await smp.request(2, FLASH_MGMT, CMD_ERASE, {"off": SLOT0, "len": 4096}, timeout=5)
+    except (asyncio.TimeoutError, RuntimeError) as e:
+        # The CPU stalls while the sector erases; the reply is often lost.
+        print(f"  (no reply to the erase: {type(e).__name__}; this is common)")
+    print("Done. Unplug and replug USB: the keyboard comes up as MCUBOOT.\n"
+          "Then flash:  python3 scripts/dfu.py dist/crush80-zmk-app.signed.bin")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -44,7 +44,7 @@ echo "=============================================="
 echo ""
 
 # ── 1. System packages ──────────────────────────────────────────────────────
-echo "[1/7] Installing system packages..."
+echo "[1/6] Installing system packages..."
 if [[ "$OS" == "Darwin" ]]; then
     BREW_PACKAGES=(cmake ninja dtc protobuf python3 wget xz)
     MISSING=()
@@ -69,7 +69,7 @@ fi
 echo "    System packages: OK"
 
 # ── 2. Python tools ─────────────────────────────────────────────────────────
-echo "[2/7] Installing Python tools..."
+echo "[2/6] Installing Python tools..."
 if [[ "$OS" == "Darwin" ]]; then
     pip3 install -r "$REPO_DIR/requirements.txt"
 else
@@ -97,7 +97,7 @@ else
 fi
 
 # ── 3. Zephyr SDK ───────────────────────────────────────────────────────────
-echo "[3/7] Zephyr SDK $SDK_VERSION ($SDK_PLATFORM)..."
+echo "[3/6] Zephyr SDK $SDK_VERSION ($SDK_PLATFORM)..."
 if [[ -f "$SDK_DIR/riscv64-zephyr-elf/bin/riscv64-zephyr-elf-gcc" ]]; then
     echo "    SDK already present at $SDK_DIR — skipping download."
 else
@@ -114,7 +114,7 @@ else
 fi
 
 # ── 4. West workspace ────────────────────────────────────────────────────────
-echo "[4/7] West workspace at $WORKSPACE_DIR..."
+echo "[4/6] West workspace at $WORKSPACE_DIR..."
 if [[ -d "$WORKSPACE_DIR/.west" ]]; then
     echo "    Workspace already initialised — running west update..."
     cd "$WORKSPACE_DIR"
@@ -132,7 +132,7 @@ fi
 echo "    West workspace: OK"
 
 # ── 5. Telink BLE blob ───────────────────────────────────────────────────────
-echo "[5/7] Telink BLE blob..."
+echo "[5/6] Telink BLE blob..."
 cd "$WORKSPACE_DIR"
 if [[ -f "$WORKSPACE_DIR/fetch_ble_blob.sh" ]]; then
     bash fetch_ble_blob.sh
@@ -141,7 +141,7 @@ else
 fi
 
 # ── 6. Zephyr Python requirements + cmake registration ───────────────────────
-echo "[6/7] Zephyr Python requirements and cmake package..."
+echo "[6/6] Zephyr Python requirements and cmake package..."
 if [[ -f "$WORKSPACE_DIR/zephyr/scripts/requirements.txt" ]]; then
     if [[ "$OS" == "Darwin" ]]; then
         pip3 install -r "$WORKSPACE_DIR/zephyr/scripts/requirements.txt" -q
@@ -151,33 +151,6 @@ if [[ -f "$WORKSPACE_DIR/zephyr/scripts/requirements.txt" ]]; then
 fi
 if [[ -f "$WORKSPACE_DIR/zephyr/share/zephyr-package/cmake/zephyr_export.cmake" ]]; then
     cmake -P "$WORKSPACE_DIR/zephyr/share/zephyr-package/cmake/zephyr_export.cmake"
-fi
-
-# ── 7. Go toolchain + mcumgr ─────────────────────────────────────────────────
-echo "[7/7] Go toolchain and mcumgr..."
-if command -v go &>/dev/null; then
-    echo "    Go already installed: $(go version)"
-else
-    if [[ "$OS" == "Darwin" ]]; then
-        echo "    Installing Go via Homebrew..."
-        brew install go
-    else
-        GO_VERSION="1.22.5"
-        echo "    Installing Go $GO_VERSION..."
-        wget -q --show-progress "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O /tmp/go.tar.gz
-        sudo rm -rf /usr/local/go
-        sudo tar -C /usr/local -xzf /tmp/go.tar.gz
-        rm /tmp/go.tar.gz
-        export PATH="/usr/local/go/bin:$HOME/go/bin:$PATH"
-    fi
-fi
-
-if [[ -x "$HOME/go/bin/mcumgr" ]]; then
-    echo "    mcumgr already installed."
-else
-    echo "    Installing mcumgr..."
-    go install github.com/apache/mynewt-mcumgr-cli/mcumgr@latest
-    echo "    mcumgr installed: $HOME/go/bin/mcumgr"
 fi
 
 # ── Apply patches ────────────────────────────────────────────────────────────
@@ -197,5 +170,5 @@ echo "  Workspace: $WORKSPACE_DIR"
 echo "  SDK:       $SDK_DIR"
 echo ""
 echo "  Next: bash build.sh"
-echo "  Then: bash flash.sh"
+echo "  Then: bash install_zmk.sh (from stock) or Fn+Esc + bash update.sh"
 echo "=============================================="
