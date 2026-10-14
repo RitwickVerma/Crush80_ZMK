@@ -1,0 +1,331 @@
+diff --git a/app/include/zmk/hid.h b/app/include/zmk/hid.h
+index 962180e7..b843186b 100644
+--- a/app/include/zmk/hid.h
++++ b/app/include/zmk/hid.h
+@@ -76,6 +76,10 @@
+ #define ZMK_HID_REPORT_ID_LEDS 0x01
+ #define ZMK_HID_REPORT_ID_CONSUMER 0x02
+ #define ZMK_HID_REPORT_ID_MOUSE 0x03
++#define ZMK_HID_REPORT_ID_STUDIO 0x0C
++/* 15 payload bytes: 1 report ID + 15 = 16 = keyboard IN endpoint MPS, so each
++ * Studio chunk is a single USB packet. */
++#define ZMK_HID_STUDIO_REPORT_PAYLOAD_SIZE 15
+ 
+ #ifndef HID_ITEM_TAG_PUSH
+ #define HID_ITEM_TAG_PUSH 0xA
+@@ -185,6 +189,24 @@ static const uint8_t zmk_hid_report_desc[] = {
+     HID_INPUT(ZMK_HID_MAIN_VAL_DATA | ZMK_HID_MAIN_VAL_ARRAY | ZMK_HID_MAIN_VAL_ABS),
+     HID_END_COLLECTION,
+ 
++#if IS_ENABLED(CONFIG_ZMK_STUDIO_TRANSPORT_USB_HID)
++    /* ZMK Studio RPC over raw HID. Declared as an INPUT report (device ->
++     * host) plus a FEATURE report (host -> device via SET_REPORT), both
++     * report ID 0x0C, 15 payload bytes. */
++    HID_USAGE_PAGE(HID_USAGE_GEN_DESKTOP),
++    HID_USAGE(HID_USAGE_GD_KEYBOARD),
++    HID_COLLECTION(HID_COLLECTION_APPLICATION),
++    HID_REPORT_ID(ZMK_HID_REPORT_ID_STUDIO),
++    HID_LOGICAL_MIN8(0x00),
++    HID_LOGICAL_MAX8(0xFF),
++    HID_REPORT_SIZE(0x08),
++    HID_REPORT_COUNT(ZMK_HID_STUDIO_REPORT_PAYLOAD_SIZE),
++    HID_INPUT(ZMK_HID_MAIN_VAL_DATA | ZMK_HID_MAIN_VAL_VAR | ZMK_HID_MAIN_VAL_ABS),
++    HID_REPORT_COUNT(ZMK_HID_STUDIO_REPORT_PAYLOAD_SIZE),
++    HID_FEATURE(ZMK_HID_MAIN_VAL_DATA | ZMK_HID_MAIN_VAL_VAR | ZMK_HID_MAIN_VAL_ABS),
++    HID_END_COLLECTION,
++#endif /* CONFIG_ZMK_STUDIO_TRANSPORT_USB_HID */
++
+ #if IS_ENABLED(CONFIG_ZMK_POINTING)
+     HID_USAGE_PAGE(HID_USAGE_GD),
+     HID_USAGE(HID_USAGE_GD_MOUSE),
+diff --git a/app/include/zmk/studio/hid_rpc_transport.h b/app/include/zmk/studio/hid_rpc_transport.h
+new file mode 100644
+index 00000000..ee6891a5
+--- /dev/null
++++ b/app/include/zmk/studio/hid_rpc_transport.h
+@@ -0,0 +1,16 @@
++/*
++ * Copyright (c) 2025
++ * SPDX-License-Identifier: MIT
++ */
++
++#pragma once
++
++#include <stddef.h>
++#include <stdint.h>
++
++/**
++ * @brief Feed incoming Studio RPC payload bytes received over the USB raw-HID
++ * transport (report ID 0x0C). `payload` points at the 15 report payload bytes
++ * (after the report ID): [seq][len][data...].
++ */
++void zmk_studio_hid_receive(const uint8_t *payload, size_t len);
+diff --git a/app/include/zmk/usb_hid.h b/app/include/zmk/usb_hid.h
+index 785f6af8..cee1a913 100644
+--- a/app/include/zmk/usb_hid.h
++++ b/app/include/zmk/usb_hid.h
+@@ -7,9 +7,11 @@
+ #pragma once
+ 
+ #include <stdint.h>
++#include <stddef.h>
+ 
+ int zmk_usb_hid_send_keyboard_report(void);
+ int zmk_usb_hid_send_consumer_report(void);
++int zmk_usb_hid_send_studio_report(const uint8_t *payload, size_t len);
+ #if IS_ENABLED(CONFIG_ZMK_POINTING)
+ int zmk_usb_hid_send_mouse_report(void);
+ #endif // IS_ENABLED(CONFIG_ZMK_POINTING)
+diff --git a/app/src/studio/CMakeLists.txt b/app/src/studio/CMakeLists.txt
+index a8417dd7..7319f730 100644
+--- a/app/src/studio/CMakeLists.txt
++++ b/app/src/studio/CMakeLists.txt
+@@ -14,4 +14,5 @@ target_sources(app PRIVATE behavior_subsystem.c)
+ target_sources(app PRIVATE core_subsystem.c)
+ target_sources(app PRIVATE keymap_subsystem.c)
+ target_sources_ifdef(CONFIG_ZMK_STUDIO_TRANSPORT_UART app PRIVATE uart_rpc_transport.c)
++target_sources_ifdef(CONFIG_ZMK_STUDIO_TRANSPORT_USB_HID app PRIVATE hid_rpc_transport.c)
+ target_sources_ifdef(CONFIG_ZMK_STUDIO_TRANSPORT_BLE app PRIVATE gatt_rpc_transport.c)
+\ No newline at end of file
+diff --git a/app/src/studio/Kconfig b/app/src/studio/Kconfig
+index d7d3d411..424c97ae 100644
+--- a/app/src/studio/Kconfig
++++ b/app/src/studio/Kconfig
+@@ -64,6 +64,14 @@ config ZMK_STUDIO_TRANSPORT_UART_RX_STACK_SIZE
+     depends on !UART_INTERRUPT_DRIVEN
+     default 512
+ 
++config ZMK_STUDIO_TRANSPORT_USB_HID
++    bool "USB (Raw HID)"
++    select RING_BUFFER
++    help
++      Add firmware support for studio RPC over a USB raw HID report
++      (report ID 0x0C) on the keyboard HID interface. Enables ZMK Studio
++      over a wired USB connection without a second CDC-ACM endpoint.
++
+ config ZMK_STUDIO_TRANSPORT_BLE
+     bool "BLE (GATT)"
+     select RING_BUFFER
+diff --git a/app/src/studio/hid_rpc_transport.c b/app/src/studio/hid_rpc_transport.c
+new file mode 100644
+index 00000000..cdcbc24f
+--- /dev/null
++++ b/app/src/studio/hid_rpc_transport.c
+@@ -0,0 +1,112 @@
++/*
++ * Copyright (c) 2025
++ * SPDX-License-Identifier: MIT
++ *
++ * ZMK Studio RPC transport over USB raw HID (report ID 0x0C).
++ *
++ * The B91 has no spare CDC-ACM (its 256B USB SRAM fits exactly one, already
++ * used by mcumgr), so Studio rides the keyboard HID interface instead:
++ *
++ *   - Host -> device: SET_REPORT (FEATURE, report 0x0C), 16 bytes
++ *   - Device -> host: interrupt IN report 0x0C, 16 bytes
++ *
++ * Wire format of the 15 payload bytes: [seq][len][data0..data12]
++ *   seq : 1-byte sequence number (wraps); lets the client drop the B91 IN
++ *         endpoint's duplicate re-transmits.
++ *   len : number of valid data bytes (0..13).
++ *   data: 13-byte data window, only the first `len` bytes are meaningful,
++ *         rest zero-padded (the HID report is a fixed 16 bytes on the wire).
++ */
++
++#include <zephyr/kernel.h>
++#include <zephyr/device.h>
++#include <zephyr/sys/ring_buffer.h>
++#include <zephyr/logging/log.h>
++
++#include <zmk/studio/rpc.h>
++#include <zmk/usb_hid.h>
++#include <zmk/hid.h>
++
++#include <string.h>
++
++LOG_MODULE_DECLARE(zmk_studio, CONFIG_ZMK_STUDIO_LOG_LEVEL);
++
++/* Payload bytes after the report ID (1) that fit in one 16-byte IN packet. */
++#define HID_STUDIO_PAYLOAD ZMK_HID_STUDIO_REPORT_PAYLOAD_SIZE
++/* Payload minus [seq][len] header. */
++#define HID_STUDIO_CHUNK (HID_STUDIO_PAYLOAD - 2)
++
++static uint8_t tx_seq;
++
++static void hid_tx_notify(struct ring_buf *tx_buf, size_t added, bool msg_done, void *user_data) {
++    ARG_UNUSED(user_data);
++
++    if (!msg_done && ring_buf_size_get(tx_buf) <= (ring_buf_capacity_get(tx_buf) / 2)) {
++        return;
++    }
++
++    while (ring_buf_size_get(tx_buf) > 0) {
++        uint8_t payload[HID_STUDIO_PAYLOAD];
++        uint8_t *buf;
++        uint32_t len = ring_buf_get_claim(tx_buf, &buf, HID_STUDIO_CHUNK);
++
++        if (len == 0) {
++            break;
++        }
++
++        payload[0] = tx_seq++;
++        payload[1] = (uint8_t)len;
++        memcpy(&payload[2], buf, len);
++        memset(&payload[2 + len], 0, HID_STUDIO_CHUNK - len);
++
++        ring_buf_get_finish(tx_buf, len);
++
++        if (zmk_usb_hid_send_studio_report(payload, sizeof(payload)) < 0) {
++            LOG_DBG("Studio HID report send failed; dropping chunk");
++        }
++    }
++}
++
++static uint8_t last_rx_seq;
++static bool rx_seq_valid;
++
++void zmk_studio_hid_receive(const uint8_t *payload, size_t len) {
++    if (len < 3) {
++        return;
++    }
++
++    uint8_t seq = payload[0];
++    uint8_t n = payload[1];
++    if (n > len - 2) {
++        n = len - 2;
++    }
++
++    if (rx_seq_valid && seq == last_rx_seq) {
++        /* B91 IN/OUT duplicate re-transmit of the previous report. */
++        return;
++    }
++    last_rx_seq = seq;
++    rx_seq_valid = true;
++
++    struct ring_buf *rx_buf = zmk_rpc_get_rx_buf();
++    uint32_t copied = 0;
++
++    while (copied < n) {
++        uint8_t *buf;
++        uint32_t claim = ring_buf_put_claim(rx_buf, &buf, n - copied);
++
++        if (claim > 0) {
++            memcpy(buf, &payload[2] + copied, claim);
++            copied += claim;
++        }
++
++        ring_buf_put_finish(rx_buf, claim);
++    }
++
++    zmk_rpc_rx_notify();
++}
++
++static int hid_rx_start(void) { return 0; }
++static int hid_rx_stop(void) { return 0; }
++
++ZMK_RPC_TRANSPORT(hid, ZMK_TRANSPORT_USB, hid_rx_start, hid_rx_stop, NULL, hid_tx_notify);
+diff --git a/app/src/usb_hid.c b/app/src/usb_hid.c
+index 9adc7db8..31730b58 100644
+--- a/app/src/usb_hid.c
++++ b/app/src/usb_hid.c
+@@ -6,6 +6,7 @@
+ 
+ #include <zephyr/device.h>
+ #include <zephyr/init.h>
++#include <string.h>
+ 
+ #include <zephyr/usb/usb_device.h>
+ #include <zephyr/usb/class/usb_hid.h>
+@@ -14,6 +15,10 @@
+ #include <zmk/hid.h>
+ #include <zmk/keymap.h>
+ 
++#if IS_ENABLED(CONFIG_ZMK_STUDIO_TRANSPORT_USB_HID)
++#include <zmk/studio/hid_rpc_transport.h>
++#endif
++
+ #if IS_ENABLED(CONFIG_ZMK_POINTING_SMOOTH_SCROLLING)
+ #include <zmk/pointing/resolution_multipliers.h>
+ #endif // IS_ENABLED(CONFIG_ZMK_POINTING_SMOOTH_SCROLLING)
+@@ -82,6 +87,14 @@ static int get_report_cb(const struct device *dev, struct usb_setup_packet *setu
+             *data = (uint8_t *)&res_feature_report;
+             break;
+ #endif // IS_ENABLED(CONFIG_ZMK_POINTING_SMOOTH_SCROLLING)
++#if IS_ENABLED(CONFIG_ZMK_STUDIO_TRANSPORT_USB_HID)
++        case ZMK_HID_REPORT_ID_STUDIO: {
++            static uint8_t studio_report[ZMK_HID_STUDIO_REPORT_PAYLOAD_SIZE];
++            *data = studio_report;
++            *len = sizeof(studio_report);
++            break;
++        }
++#endif // IS_ENABLED(CONFIG_ZMK_STUDIO_TRANSPORT_USB_HID)
+         default:
+             return -ENOTSUP;
+         }
+@@ -140,6 +153,16 @@ static int set_report_cb(const struct device *dev, struct usb_setup_packet *setu
+ 
+             break;
+ #endif // IS_ENABLED(CONFIG_ZMK_POINTING_SMOOTH_SCROLLING)
++#if IS_ENABLED(CONFIG_ZMK_STUDIO_TRANSPORT_USB_HID)
++        case ZMK_HID_REPORT_ID_STUDIO: {
++            if (*len < 1 + ZMK_HID_STUDIO_REPORT_PAYLOAD_SIZE) {
++                return -EINVAL;
++            }
++            /* *data = [report ID][15 payload bytes] */
++            zmk_studio_hid_receive(&(*data)[1], ZMK_HID_STUDIO_REPORT_PAYLOAD_SIZE);
++            break;
++        }
++#endif // IS_ENABLED(CONFIG_ZMK_STUDIO_TRANSPORT_USB_HID)
+         default:
+             return -ENOTSUP;
+         }
+@@ -187,7 +210,10 @@ static const struct hid_ops ops = {
+ static int zmk_usb_hid_send_report(const uint8_t *report, size_t len) {
+     switch (zmk_usb_get_status()) {
+     case USB_DC_SUSPEND:
+-        return usb_wakeup_request();
++        // A keypress while suspended is the user asking for the link back.
++        // usb.c owns how: remote wakeup where the host armed it, re-presenting
++        // the device where it did not.
++        return zmk_usb_user_activity_while_suspended();
+     case USB_DC_ERROR:
+     case USB_DC_RESET:
+     case USB_DC_DISCONNECTED:
+@@ -201,6 +227,14 @@ static int zmk_usb_hid_send_report(const uint8_t *report, size_t len) {
+             k_sem_give(&hid_sem);
+         }
+ 
++        // Feed the dead-bus heartbeat's HID-starvation detector: a device
++        // that is CONFIGURED but whose interrupt IN endpoint is never
++        // drained (host HID driver failed to bind, seen after macOS
++        // dark-wake enumerations) fails every write with -EAGAIN. A failure
++        // also asks the host to resume, which covers sleeps that never
++        // delivered a clean SUSPEND.
++        zmk_usb_report_send_result(err == 0);
++
+         return err;
+     }
+ }
+@@ -222,6 +256,22 @@ int zmk_usb_hid_send_consumer_report(void) {
+     return zmk_usb_hid_send_report((uint8_t *)report, sizeof(*report));
+ }
+ 
++#if IS_ENABLED(CONFIG_ZMK_STUDIO_TRANSPORT_USB_HID)
++int zmk_usb_hid_send_studio_report(const uint8_t *payload, size_t len) {
++    uint8_t report[1 + ZMK_HID_STUDIO_REPORT_PAYLOAD_SIZE];
++
++    if (len > ZMK_HID_STUDIO_REPORT_PAYLOAD_SIZE) {
++        return -EINVAL;
++    }
++
++    report[0] = ZMK_HID_REPORT_ID_STUDIO;
++    memcpy(&report[1], payload, len);
++    memset(&report[1 + len], 0, ZMK_HID_STUDIO_REPORT_PAYLOAD_SIZE - len);
++
++    return zmk_usb_hid_send_report(report, sizeof(report));
++}
++#endif /* IS_ENABLED(CONFIG_ZMK_STUDIO_TRANSPORT_USB_HID) */
++
+ #if IS_ENABLED(CONFIG_ZMK_POINTING)
+ int zmk_usb_hid_send_mouse_report() {
+ #if IS_ENABLED(CONFIG_ZMK_USB_BOOT)

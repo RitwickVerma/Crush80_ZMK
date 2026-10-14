@@ -1,0 +1,272 @@
+diff --git a/package-lock.json b/package-lock.json
+index 77d0645..37af490 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -36,6 +36,7 @@
+         "@tauri-apps/cli": "^2.0.0",
+         "@types/react": "^18.2.66",
+         "@types/react-dom": "^18.2.22",
++        "@types/w3c-web-hid": "^1.0.7",
+         "@types/w3c-web-serial": "^1.0.6",
+         "@types/web-bluetooth": "^0.0.20",
+         "@typescript-eslint/eslint-plugin": "^7.2.0",
+@@ -59,80 +60,6 @@
+         "@rollup/rollup-darwin-arm64": "^4.18.1"
+       }
+     },
+-    "../zmk-studio-ts-client": {
+-      "version": "0.0.1-development",
+-      "extraneous": true,
+-      "hasInstallScript": true,
+-      "license": "MIT",
+-      "dependencies": {
+-        "async-mutex": "^0.5.0"
+-      },
+-      "devDependencies": {
+-        "@ryansonshine/commitizen": "^4.2.8",
+-        "@ryansonshine/cz-conventional-changelog": "^3.3.4",
+-        "@types/jest": "^29.0.0",
+-        "@types/node": "^12.20.11",
+-        "@types/w3c-web-serial": "^1.0.6",
+-        "@types/web-bluetooth": "^0.0.20",
+-        "@typescript-eslint/eslint-plugin": "^4.22.0",
+-        "@typescript-eslint/parser": "^4.22.0",
+-        "conventional-changelog-conventionalcommits": "^5.0.0",
+-        "eslint": "^7.25.0",
+-        "eslint-config-prettier": "^8.3.0",
+-        "eslint-plugin-node": "^11.1.0",
+-        "eslint-plugin-prettier": "^3.4.0",
+-        "husky": "^6.0.0",
+-        "jest": "^29.0.0",
+-        "lint-staged": "^13.2.1",
+-        "prettier": "^2.2.1",
+-        "semantic-release": "^21.0.1",
+-        "ts-jest": "^29.0.0",
+-        "ts-node": "^10.2.1",
+-        "ts-proto": "^1.174.0",
+-        "typescript": "^4.2.4",
+-        "web-streams-polyfill": "4.0.0"
+-      },
+-      "engines": {
+-        "node": ">=12.0"
+-      }
+-    },
+-    "../zmk/rpc-clients/typescript/ts-zmk-rpc-core": {
+-      "version": "0.0.1-development",
+-      "extraneous": true,
+-      "hasInstallScript": true,
+-      "license": "MIT",
+-      "dependencies": {
+-        "async-mutex": "^0.5.0"
+-      },
+-      "devDependencies": {
+-        "@ryansonshine/commitizen": "^4.2.8",
+-        "@ryansonshine/cz-conventional-changelog": "^3.3.4",
+-        "@types/jest": "^27.5.2",
+-        "@types/node": "^12.20.11",
+-        "@types/w3c-web-serial": "^1.0.6",
+-        "@types/web-bluetooth": "^0.0.20",
+-        "@typescript-eslint/eslint-plugin": "^4.22.0",
+-        "@typescript-eslint/parser": "^4.22.0",
+-        "conventional-changelog-conventionalcommits": "^5.0.0",
+-        "eslint": "^7.25.0",
+-        "eslint-config-prettier": "^8.3.0",
+-        "eslint-plugin-node": "^11.1.0",
+-        "eslint-plugin-prettier": "^3.4.0",
+-        "husky": "^6.0.0",
+-        "jest": "^27.2.0",
+-        "lint-staged": "^13.2.1",
+-        "prettier": "^2.2.1",
+-        "semantic-release": "^21.0.1",
+-        "ts-jest": "^27.0.5",
+-        "ts-node": "^10.2.1",
+-        "ts-proto": "^1.174.0",
+-        "typescript": "^4.2.4",
+-        "web-streams-polyfill": "4.0.0"
+-      },
+-      "engines": {
+-        "node": ">=12.0"
+-      }
+-    },
+     "node_modules/@adobe/css-tools": {
+       "version": "4.3.3",
+       "dev": true,
+@@ -4861,6 +4788,13 @@
+       "integrity": "sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==",
+       "dev": true
+     },
++    "node_modules/@types/w3c-web-hid": {
++      "version": "1.0.7",
++      "resolved": "https://registry.npmjs.org/@types/w3c-web-hid/-/w3c-web-hid-1.0.7.tgz",
++      "integrity": "sha512-/y97wBH7fYB5vKoDIn11O1ZDMNFLCAVqZ9af0OWDN7VSO2ClErEN2HlGbBuPgHBTUmZOVx1og2ZHX1U2gEJM4Q==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/@types/w3c-web-serial": {
+       "version": "1.0.6",
+       "dev": true,
+@@ -14337,6 +14271,12 @@
+       "integrity": "sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==",
+       "dev": true
+     },
++    "@types/w3c-web-hid": {
++      "version": "1.0.7",
++      "resolved": "https://registry.npmjs.org/@types/w3c-web-hid/-/w3c-web-hid-1.0.7.tgz",
++      "integrity": "sha512-/y97wBH7fYB5vKoDIn11O1ZDMNFLCAVqZ9af0OWDN7VSO2ClErEN2HlGbBuPgHBTUmZOVx1og2ZHX1U2gEJM4Q==",
++      "dev": true
++    },
+     "@types/w3c-web-serial": {
+       "version": "1.0.6",
+       "dev": true
+diff --git a/package.json b/package.json
+index 1505bca..d918477 100644
+--- a/package.json
++++ b/package.json
+@@ -42,6 +42,7 @@
+     "@tauri-apps/cli": "^2.0.0",
+     "@types/react": "^18.2.66",
+     "@types/react-dom": "^18.2.22",
++    "@types/w3c-web-hid": "^1.0.7",
+     "@types/w3c-web-serial": "^1.0.6",
+     "@types/web-bluetooth": "^0.0.20",
+     "@typescript-eslint/eslint-plugin": "^7.2.0",
+@@ -64,4 +65,4 @@
+     "@esbuild/darwin-arm64": "0.23.0",
+     "@rollup/rollup-darwin-arm64": "^4.18.1"
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/src/App.tsx b/src/App.tsx
+index e09ed0c..e66d88d 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -19,6 +19,7 @@ import {
+   connect as tauri_serial_connect,
+   list_devices as serial_list_devices,
+ } from "./tauri/serial";
++import { connect as webhid_connect } from "./transport/webhid";
+ import Keyboard from "./keyboard/Keyboard";
+ import { UndoRedoContext, useUndoRedo } from "./undoRedo";
+ import { usePub, useSub } from "./usePubSub";
+@@ -37,7 +38,8 @@ declare global {
+ }
+ 
+ const TRANSPORTS: TransportFactory[] = [
+-  navigator.serial && { label: "USB", connect: serial_connect },
++  navigator.hid && { label: "USB (HID)", connect: webhid_connect },
++  navigator.serial && { label: "USB (Serial)", connect: serial_connect },
+   ...(navigator.bluetooth && navigator.userAgent.indexOf("Linux") >= 0
+     ? [{ label: "BLE", connect: gatt_connect }]
+     : []),
+diff --git a/src/transport/webhid.ts b/src/transport/webhid.ts
+new file mode 100644
+index 0000000..e5c1df1
+--- /dev/null
++++ b/src/transport/webhid.ts
+@@ -0,0 +1,105 @@
++import type { RpcTransport } from "@zmkfirmware/zmk-studio-ts-client/transport/index";
++
++// Crush80 raw-HID ZMK Studio transport (report ID 0x0C on the keyboard HID
++// interface). Wire report = [0x0C][seq][len][13 data bytes]. The seq byte lets
++// us drop the B91 IN endpoint's duplicate re-transmits; len delimits the valid
++// data window in the fixed 15-byte payload.
++const REPORT_ID = 0x0c;
++const PAYLOAD = 15; // payload bytes after the report ID
++const CHUNK = PAYLOAD - 2; // payload - [seq][len] header = 13 data bytes
++
++const FILTER = {
++  vendorId: 0x1d50,
++  productId: 0x615e,
++  usagePage: 0x01, // Generic Desktop
++  usage: 0x06, // Keyboard (the interface carrying report 0x0C)
++};
++
++export async function connect(): Promise<RpcTransport> {
++  const devices = await navigator.hid.requestDevice({ filters: [FILTER] });
++  const device = devices[0];
++  if (!device) {
++    throw new Error("No device selected");
++  }
++
++  await device.open();
++
++  const abortController = new AbortController();
++  const label = "Crush 80 (USB HID)";
++
++  // ---- RX: input reports 0x0C -> raw framed byte stream ----
++  let rx_seq: number | null = null;
++  const readable = new ReadableStream<Uint8Array>({
++    start(controller) {
++      const onReport = (e: HIDInputReportEvent) => {
++        if (e.reportId !== REPORT_ID) {
++          return;
++        }
++        const raw = new Uint8Array(
++          e.data.buffer,
++          e.data.byteOffset,
++          e.data.byteLength
++        );
++        // Some browsers include the report ID as raw[0]; handle both.
++        let off = 0;
++        if (raw.length > 0 && raw[0] === REPORT_ID) {
++          off = 1;
++        }
++        if (raw.length < off + 3) {
++          return;
++        }
++        const seq = raw[off];
++        const n = Math.min(raw[off + 1], CHUNK);
++        if (seq === rx_seq) {
++          return; // duplicate re-transmit
++        }
++        rx_seq = seq;
++        if (n > 0) {
++          controller.enqueue(raw.subarray(off + 2, off + 2 + n));
++        }
++      };
++      device.addEventListener("inputreport", onReport);
++      abortController.signal.addEventListener(
++        "abort",
++        () => {
++          device.removeEventListener("inputreport", onReport);
++          try {
++            controller.close();
++          } catch {
++            /* already closed */
++          }
++        },
++        { once: true }
++      );
++    },
++  });
++
++  // ---- TX: raw framed byte stream -> feature reports 0x0C ----
++  let tx_seq = 0;
++  const writable = new WritableStream<Uint8Array>({
++    async write(chunk) {
++      for (let i = 0; i < chunk.length; i += CHUNK) {
++        const n = Math.min(CHUNK, chunk.length - i);
++        const payload = new Uint8Array(PAYLOAD);
++        payload[0] = tx_seq++ & 0xff;
++        payload[1] = n;
++        payload.set(chunk.subarray(i, i + n), 2);
++        await device.sendFeatureReport(REPORT_ID, payload);
++      }
++    },
++  });
++
++  abortController.signal.addEventListener(
++    "abort",
++    async () => {
++      try {
++        await device.close();
++      } catch {
++        /* ignore */
++      }
++    },
++    { once: true }
++  );
++
++  return { label, abortController, readable, writable };
++}

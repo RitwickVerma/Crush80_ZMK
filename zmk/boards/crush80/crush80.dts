@@ -50,10 +50,8 @@
 		zephyr,boot-mode = &retention_boot_mode;
 		zmk,battery = &battery;
 		zmk,kscan = &kscan0;
+		zmk,underglow = &led_strip;
 		zmk,physical-layout = &crush80_layout;
-		/* LED controllers: aw20216s0 and aw20216s1 (2x AW20216S via GSPI).
-		 * zmk,underglow not set here — crush80_rgb.c addresses both chips directly.
-		 * Pins confirmed: PE0=CS0, PE1=CLK, PE2=MOSI, PC0=CS1, PC2=power */
 	};
 
 	sram_noinit: sram@9FFF0 {
@@ -305,6 +303,16 @@
 		compatible = "telink,b91-watchdog";
 		reg = <0x80140140 0x20>;
 		status = "okay";
+	};
+
+	led_strip: ws2812 {
+		compatible = "telink,b91-spi-led-strip";
+		/* 154 LEDs total (88 per-key + side bar + logo), SK6812, GRB order.
+		 * Data = PB7 (PSPI MOSI), 6 MHz. Power = PC2 (MOSFET, active-high). */
+		chain-length = <154>;
+		color-mapping = <LED_COLOR_ID_GREEN
+				 LED_COLOR_ID_RED
+				 LED_COLOR_ID_BLUE>;
 	};
 };
 

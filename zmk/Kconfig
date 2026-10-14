@@ -3,6 +3,7 @@ rsource "drivers/bluetooth/Kconfig"
 rsource "drivers/sensor/Kconfig"
 rsource "drivers/watchdog/Kconfig"
 rsource "drivers/led/Kconfig"
+rsource "drivers/led_strip/Kconfig"
 
 config BOOT_DIAG
 	bool "Boot diagnostic (.noinit SRAM buffer for SWS debug)"
@@ -35,3 +36,45 @@ config CRUSH80_RGB
 	  Custom RGB LED driver for the Crush80 keyboard's two AW20216S chips.
 	  Uses GPIO bit-bang SPI on PE0/PE1/PE2 (shared with kscan columns).
 	  Temporarily pauses kscan during LED updates (~3-5ms per frame at 30Hz).
+
+config RAINY_RGB
+	bool "Rainy75 out-of-tree RGB lighting engine (ported for Crush80)"
+	depends on LED_STRIP_B91_SPI
+	help
+	  Custom WS2812 lighting engine (effects, reactivity, per-key) that
+	  replaces ZMK's rgb_underglow. Owns the led_strip device directly.
+
+config OPENRGB
+	bool "OpenRGB support over Raw HID (QMK OpenRGB protocol v0x0C)"
+	depends on RAINY_RGB && USB_DEVICE_HID
+	help
+	  Adds a second HID interface (HID_1) speaking the QMK OpenRGB Raw HID
+	  protocol, so OpenRGB can auto-detect the keyboard and drive each LED
+	  directly (per-key color) or switch rainy_rgb effects.  Requires
+	  CONFIG_USB_HID_DEVICE_COUNT=2 and the per-instance interrupt-OUT
+	  patch to the Zephyr USB HID class.
+
+config RAINY_RGB_WALKER
+	bool "Walker diagnostic effect (LED-map calibration)"
+	depends on RAINY_RGB
+	default n
+	help
+	  Appends a "walker" effect that lights one LED and steps to the next
+	  chain index on each keypress. Used to calibrate the 154-LED map.
+
+config RAINY_RGB_IDLE_BLANK
+	bool "Blank LEDs on activity idle (power saving)"
+	depends on RAINY_RGB
+	default n
+	help
+	  Turn the per-key LEDs off after CONFIG_ZMK_IDLE_TIMEOUT of no activity.
+
+config CRUSH80_AUTO_CONFIRM
+	bool "Auto-confirm booted image (disable for TEST builds)"
+	default y
+	depends on IMG_MANAGER && WDT_B91
+	help
+	  Confirm the booted MCUboot image ~5s after boot (with a watchdog
+	  safety net). DISABLE this for TEST builds so a bad image stays in
+	  MCUboot "test" mode and reverts to the previous confirmed image on
+	  the next power-cycle (unplug/replug).

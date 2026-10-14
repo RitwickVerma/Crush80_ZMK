@@ -7,6 +7,7 @@ add_subdirectory_ifdef(CONFIG_BT_HCI_B91 drivers/bluetooth)
 add_subdirectory_ifdef(CONFIG_BATTERY_B91_ADC drivers/sensor)
 add_subdirectory_ifdef(CONFIG_WDT_B91 drivers/watchdog)
 add_subdirectory_ifdef(CONFIG_AW20216S drivers/led)
+add_subdirectory_ifdef(CONFIG_LED_STRIP_B91_SPI drivers/led_strip)
 
 if(CONFIG_BT_HCI_B91)
   zephyr_link_libraries(${CMAKE_CURRENT_SOURCE_DIR}/lib/liblt_9518_zephyr.a)
@@ -45,6 +46,28 @@ endif()
 if(CONFIG_CRUSH80_RGB)
   zephyr_library_named(crush80_rgb)
   zephyr_library_sources(src/crush80_rgb.c)
+endif()
+
+if(CONFIG_RAINY_RGB)
+  zephyr_library_named(rainy_rgb)
+  zephyr_library_include_directories(${APPLICATION_SOURCE_DIR}/include)
+  zephyr_library_sources(
+    src/behaviors/behavior_rainy_rgb.c
+    src/rainy_rgb/color.c
+    src/rainy_rgb/effects.c
+    src/rainy_rgb/led_map.c
+    src/rainy_rgb/reactive.c
+    src/rainy_rgb/engine.c
+    src/rainy_rgb/state.c
+    src/rainy_rgb/overlay.c
+    src/rainy_rgb/zmk_adapter.c
+  )
+endif()
+
+if(CONFIG_OPENRGB)
+  zephyr_library_named(openrgb)
+  zephyr_library_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+  zephyr_library_sources(src/openrgb.c)
 endif()
 
 if(CONFIG_ZMK_BLE)

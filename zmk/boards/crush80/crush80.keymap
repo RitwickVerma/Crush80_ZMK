@@ -1,25 +1,17 @@
 /*
- * Wobkey Crush 80 — ZMK keymap (Home Row Mods + Layers)
+ * Wobkey Crush 80 — ZMK keymap (standard layout)
  *
- * Mirrors the kanata configuration at ~/.config/DOTFILES/keybindings/kanata/
- * Primary target: Linux/Windows (macOS compatible via home row GUI mod)
+ * Layer 0: Base — standard 80%: F1-F12, QWERTY, arrow cluster
+ * Layer 1: Fn — media keys, BT profiles, RGB, output/Mac toggles
+ * Layer 2-4: Nav / ExtNav / Sym — dormant (no active trigger; re-wire to Fn if wanted)
+ * Layer 5: Native — full passthrough, toggled by Fn+ScrLk
+ * Layer 6: Mac — Mac variant of Base, toggled by Fn+M
  *
- * Layer 0: Base — HRM (CAGS), media F-row, W(hold)=Nav, Caps(hold)=Sym, '(hold)=Sym
- * Layer 1: Fn — F1-F12, BT profiles, RGB, output toggle
- * Layer 2: Nav — IJKL arrows, editing (hold W)
- * Layer 3: ExtNav — Word-jump, PgUp/PgDn (hold Space while in Nav)
- * Layer 4: Sym — Numbers left, punctuation right (hold Caps or ')
- * Layer 5: Native — Full passthrough, toggled by ScrLk
- *
- * Bottom row (base):
- *   LCtrl  LGui  [Shift]  Space  [Tab]  Fn  RCtrl  |  Left Down Right
- *   LAlt position = Shift (thumb), RAlt position = Tab (thumb)
- *
- * Wireless:
- *   BT profile 1/2/3 = Fn+F1/F2/F3
- *   USB output = Fn+F4, BT/USB toggle = Fn+F5
- *   BT clear = Fn+Del
- *   ZMK Studio unlock = Fn+ESC
+ * Fn shortcuts:
+ *   Esc = bootloader, F1-F8 = media (brightness/transport/volume)
+ *   1/2/3 = BT profile, 4 = USB output, 5 = toggle output
+ *   Bspc = RGB on/off, Ins = BT clear, \ = RGB effect
+ *   M = Mac toggle, Up/Down = RGB brightness
  */
 
 #include <behaviors.dtsi>
@@ -27,17 +19,19 @@
 #include <dt-bindings/zmk/bt.h>
 #include <dt-bindings/zmk/outputs.h>
 #include <dt-bindings/zmk/rgb.h>
+#include <rainy_rgb.dtsi>
+#include <dt-bindings/rainy_rgb.h>
 
 /* Layer indices */
 #define BASE     0
 #define FN       1
 #define NAV      2
 #define EXTNAV   3
-#define NATIVE   4
-#define MAC      5
-#define MACNAV   6
-#define MACEXTNAV 7
-#define SYM      8
+#define SYM      4
+#define NATIVE   5
+#define MAC      6
+#define MACNAV   7
+#define MACEXTNAV 8
 
 /*
  * Key position indices for hold-trigger-key-positions (bilateral HRM).
@@ -122,7 +116,7 @@
 
 		/*
 		 * Layer-tap for Sym (hold Caps or Apostrophe).
-		 * Caps: tap=ESC, hold=Sym. Apostrophe: tap=SQT, hold=Sym.
+		 * Caps: tap=CAPS, hold=Sym. Apostrophe: tap=SQT, hold=Sym.
 		 */
 		lt_sym: layer_tap_sym {
 			compatible = "zmk,behavior-hold-tap";
@@ -150,17 +144,6 @@
 	};
 
 	macros {
-		/*
-		 * Dummy password: w0rkloveLoveF!!!
-		 */
-		dummy_pw: dummy_pw {
-			compatible = "zmk,behavior-macro";
-			#binding-cells = <0>;
-			wait-ms = <10>;
-			tap-ms = <10>;
-			bindings = <&kp W &kp N0 &kp R &kp K &kp L &kp O &kp V &kp E &kp L &kp O &kp V &kp E &kp LS(F) &kp LS(N1) &kp LS(N1) &kp LS(N1)>;
-		};
-
 		/*
 		 * Select Word: Ctrl+Left then Shift+Ctrl+Right (Linux/Windows)
 		 */
@@ -264,32 +247,32 @@
 		default_layer {
 			display-name = "Base";
 			bindings = <
-				/* Row 0: F-row (media keys, ScrLk=toggle native) */
-				&kp ESC       &kp C_BRI_DN  &kp C_BRI_UP  &kp F3        &kp F4
-				&kp F5        &kp F6        &kp C_PREV    &kp C_PP
-				&kp C_NEXT    &kp C_MUTE    &kp C_VOL_DN  &kp C_VOL_UP
-				&kp PSCRN     &tog NATIVE   &kp PAUSE_BREAK
+				/* Row 0: F-row (standard F1-F12) */
+				&kp ESC       &kp F1        &kp F2        &kp F3        &kp F4
+				&kp F5        &kp F6        &kp F7        &kp F8
+				&kp F9        &kp F10       &kp F11       &kp F12
+				&kp PSCRN     &kp SCROLLLOCK &kp PAUSE_BREAK
 				/* Row 1: number row + nav cluster */
 				&kp GRAVE     &kp N1        &kp N2        &kp N3        &kp N4
 				&kp N5        &kp N6        &kp N7        &kp N8        &kp N9
 				&kp N0        &kp MINUS     &kp EQUAL     &kp BSPC
 				&kp INS       &kp HOME      &kp PG_UP
-				/* Row 2: QWERTY + nav cluster (W = tap W / hold Nav) */
-				&kp TAB       &kp Q         &lt_nav NAV W &kp E         &kp R
+			/* Row 2: QWERTY + nav cluster */
+			&kp TAB       &kp Q         &kp W         &kp E         &kp R
 				&kp T         &kp Y         &kp U         &kp I         &kp O
 				&kp P         &kp LBKT      &kp RBKT      &kp BSLH
 				&kp DEL       &kp END       &kp PG_DN
-				/* Row 3: home row (HRM: A=Ctrl, S=Alt, D=Gui, F=Shift / J=Shift, K=Gui, L=Alt, ;=Ctrl) */
-				&lt_sym SYM ESC &hml LCTRL A &hml LALT S &hml LGUI D &hml LSHFT F
-				&kp G         &kp H         &hmr RSHFT J  &hmr RGUI K   &hmr RALT L
-				&hmr RCTRL SEMI &lt_sym SYM SQT           &kp RET
+			/* Row 3: home row (plain keys) */
+			&kp CAPS      &kp A         &kp S         &kp D         &kp F
+			&kp G         &kp H         &kp J         &kp K         &kp L
+			&kp SEMI      &kp SQT                     &kp RET
 				/* Row 4: shift row */
 				&kp LSHFT                   &kp Z         &kp X         &kp C
 				&kp V         &kp B         &kp N         &kp M         &kp COMMA
 				&kp DOT       &kp FSLH                    &kp RSHFT     &kp UP
-				/* Row 5: bottom row (LAlt=Shift, RAlt=Tab) */
-				&kp LCTRL     &kp LGUI      &kp LSHFT                   &kp SPACE
-				&kp TAB       &mo FN        &kp RCTRL
+			/* Row 5: bottom row */
+			&kp LCTRL     &kp LGUI      &kp LALT                    &kp SPACE
+			&kp RALT      &mo FN        &kp RCTRL
 				&kp LEFT      &kp DOWN      &kp RIGHT
 			>;
 		};
@@ -301,33 +284,33 @@
 		fn_layer {
 			display-name = "Fn";
 			bindings = <
-				/* Row 0: Fn+Esc=bootloader, then actual F1-F12 */
-				&bootloader   &kp F1        &kp F2        &kp F3        &kp F4
-				&kp F5        &kp F6        &kp F7        &kp F8
-				&kp F9        &kp F10       &kp F11       &kp F12
-				&trans        &trans        &trans
-			/* Row 1: Fn+1-5=BT profiles, Fn+6=USB, Fn+7=toggle, Fn+Bspc=RGB, Fn+Ins=BT clear */
-			&trans        &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3
-			&bt BT_SEL 4  &out OUT_USB  &out OUT_TOG  &trans        &trans
-			&trans        &trans        &trans        &rgb_ug RGB_TOG
-			&bt BT_CLR    &trans        &trans
-			/* Row 2: Fn+Q=password, Fn+\=RGB effect */
-			&trans        &dummy_pw     &trans        &trans        &trans
+				/* Row 0: Fn+Esc=bootloader, Fn+F1-F8=media, Fn+F12=unlock, Fn+ScrLk=Native */
+				&bootloader   &kp C_BRI_DN  &kp C_BRI_UP  &kp C_PREV    &kp C_PP
+				&kp C_NEXT    &kp C_MUTE    &kp C_VOL_DN  &kp C_VOL_UP
+				&trans        &trans        &trans        &studio_unlock
+				&trans        &tog NATIVE   &trans
+				/* Row 1: Fn+Bspc=RGB toggle, Fn+Ins=BT clear */
+				&trans        &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &out OUT_USB
+				&out OUT_TOG  &trans        &trans        &trans        &trans
+				&trans        &trans        &trans        &rgb RGB_TOG
+				&bt BT_CLR    &trans        &trans
+				/* Row 2: Fn+\=RGB effect */
 				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &rgb_ug RGB_EFF
+				&trans        &trans        &trans        &trans        &trans
+				&trans        &trans        &trans        &rgb RGB_EFF
 				&trans        &trans        &trans
 				/* Row 3: Fn+Enter=RGB effect cycle */
 				&trans        &trans        &trans        &trans        &trans
 				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans                      &rgb_ug RGB_EFF
+				&trans        &trans                      &rgb RGB_EFF
 			/* Row 4: Fn+M=toggle Mac, Fn+Up=RGB bright up */
 			&trans                      &trans        &trans        &trans
 			&trans        &trans        &trans        &tog MAC      &trans
-			&trans        &trans                      &trans        &rgb_ug RGB_BRI
+			&trans        &trans                      &trans        &rgb RGB_BRI
 				/* Row 5: Fn+Down=RGB bright down */
 				&trans        &trans        &trans                      &trans
 				&trans        &trans        &trans
-				&trans        &rgb_ug RGB_BRD &trans
+				&trans        &rgb RGB_BRD &trans
 			>;
 		};
 
@@ -409,6 +392,45 @@
 		};
 
 		/*
+		 * Layer 4: Sym (hold Caps or Apostrophe)
+		 * Left: numbers (456 top, 789 home, 0. bottom) + coding macros
+		 * Right: brackets, punctuation, operators
+		 * Space = Shift (for capitals without releasing layer key)
+		 */
+		sym_layer {
+			display-name = "Sym";
+			bindings = <
+				/* Row 0: pass through */
+				&trans        &trans        &trans        &trans        &trans
+				&trans        &trans        &trans        &trans
+				&trans        &trans        &trans        &trans
+				&trans        &trans        &trans
+				/* Row 1: number row symbols (` 1 2 3 $ % ^ & * ( ) . = _) */
+				&kp GRAVE     &kp N1        &kp N2        &kp N3        &kp LS(N4)
+				&kp LS(N5)    &kp LS(N6)    &kp LS(N7)    &kp LS(N8)    &kp LS(N9)
+				&kp LS(N0)    &kp DOT       &trans        &trans
+				&trans        &trans        &trans
+				/* Row 2: left=4,5,6,->,lambda | right=() =>, (, ), [, ] */
+				&kp SPACE     &kp N4        &kp N5        &kp N6        &c_arw
+				&lambda       &fn_arw       &kp LS(N9)    &kp LS(N0)    &kp LBKT
+				&kp RBKT      &none         &none         &none
+				&trans        &trans        &trans
+				/* Row 3: left=_,7,8,9,-,+ | right==,comma,dot,?,',bspc */
+				&none         &kp N7        &kp N8        &kp N9        &kp MINUS
+				&kp LS(EQUAL) &kp EQUAL     &kp COMMA     &kp DOT       &kp LS(FSLH)
+				&kp SQT       &kp BSPC                    &trans
+				/* Row 4: Shift, Undo, 0, dot, \, |, /, _, _, _, _ */
+				&kp LSHFT                   &kp LC(Z)     &kp N0        &kp DOT
+				&kp BSLH      &kp LS(BSLH)  &kp FSLH      &none         &none
+				&none         &none                       &kp RSHFT     &trans
+				/* Row 5: pass mods, Space=Shift, right thumb=0,dot */
+				&kp LCTRL     &kp LGUI      &trans                      &kp LSHFT
+				&kp N0        &kp DOT       &kp RCTRL
+				&trans        &trans        &trans
+			>;
+		};
+
+		/*
 		 * Layer 5: Native (full passthrough — no remapping)
 		 * Toggle on/off with ScrLk position (tog NATIVE in base, tog NATIVE here)
 		 */
@@ -447,41 +469,38 @@
 
 		/*
 		 * Layer 6: Mac Base (toggle Fn+M)
-		 * Transparent layer — only overrides W to activate MacNav.
-		 * All other keys fall through to Base (layer 0), allowing Fn (layer 1)
-		 * to work correctly since layer 1 < layer 6 but > layer 0.
-		 * ZMK evaluates layers highest-first, so &trans here lets lower layers work.
+		 * Identical to Base except W-hold activates MacNav instead of Nav.
 		 */
 		mac_layer {
 			display-name = "Mac";
 			bindings = <
-				/* Row 0: transparent */
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans
-				&trans        &trans        &trans
-				/* Row 1: transparent */
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans
-				&trans        &trans        &trans
-			/* Row 2: only W is overridden to use MacNav */
-			&trans        &trans        &lt_mac_nav MACNAV W &trans &trans
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans
-				&trans        &trans        &trans
-				/* Row 3: transparent */
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans                      &trans
-				/* Row 4: transparent */
-				&trans                      &trans        &trans        &trans
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans                      &trans        &trans
-				/* Row 5: transparent */
-				&trans        &trans        &trans                      &trans
-				&trans        &trans        &trans
-				&trans        &trans        &trans
+				/* Row 0: F-row (standard F1-F12) */
+				&kp ESC       &kp F1        &kp F2        &kp F3        &kp F4
+				&kp F5        &kp F6        &kp F7        &kp F8
+				&kp F9        &kp F10       &kp F11       &kp F12
+				&kp PSCRN     &kp SCROLLLOCK &kp PAUSE_BREAK
+				/* Row 1: number row + nav cluster */
+				&kp GRAVE     &kp N1        &kp N2        &kp N3        &kp N4
+				&kp N5        &kp N6        &kp N7        &kp N8        &kp N9
+				&kp N0        &kp MINUS     &kp EQUAL     &kp BSPC
+				&kp INS       &kp HOME      &kp PG_UP
+			/* Row 2: QWERTY + nav cluster */
+			&kp TAB       &kp Q         &kp W         &kp E         &kp R
+				&kp T         &kp Y         &kp U         &kp I         &kp O
+				&kp P         &kp LBKT      &kp RBKT      &kp BSLH
+				&kp DEL       &kp END       &kp PG_DN
+			/* Row 3: home row (plain keys) */
+			&kp CAPS      &kp A         &kp S         &kp D         &kp F
+			&kp G         &kp H         &kp J         &kp K         &kp L
+			&kp SEMI      &kp SQT                     &kp RET
+				/* Row 4: shift row */
+				&kp LSHFT                   &kp Z         &kp X         &kp C
+				&kp V         &kp B         &kp N         &kp M         &kp COMMA
+				&kp DOT       &kp FSLH                    &kp RSHFT     &kp UP
+				/* Row 5: bottom row */
+			&kp LCTRL     &kp LGUI      &kp LALT                    &kp SPACE
+			&kp RALT      &mo FN        &kp RCTRL
+				&kp LEFT      &kp DOWN      &kp RIGHT
 			>;
 		};
 
@@ -559,46 +578,6 @@
 				/* Row 5: mods pass through, Space is held (layer active) */
 				&kp LCTRL     &kp LGUI      &kp LALT                    &none
 				&trans        &trans        &kp RCTRL
-				&trans        &trans        &trans
-			>;
-		};
-
-		/*
-		 * Layer 8: Sym (hold Caps or Apostrophe)
-		 * Highest layer index — always wins over Mac/Native when active.
-		 * Left: numbers (456 top, 789 home, 0. bottom) + coding macros
-		 * Right: brackets, punctuation, operators
-		 * Space = Shift (for capitals without releasing layer key)
-		 */
-		sym_layer {
-			display-name = "Sym";
-			bindings = <
-				/* Row 0: pass through */
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans
-				&trans        &trans        &trans
-				/* Row 1: number row symbols (` 1 2 3 $ % ^ & * ( ) . = _) */
-				&kp GRAVE     &kp N1        &kp N2        &kp N3        &kp LS(N4)
-				&kp LS(N5)    &kp LS(N6)    &kp LS(N7)    &kp LS(N8)    &kp LS(N9)
-				&kp LS(N0)    &kp DOT       &trans        &trans
-				&trans        &trans        &trans
-				/* Row 2: left=4,5,6,->,lambda | right=() =>, (, ), [, ] */
-				&kp SPACE     &kp N4        &kp N5        &kp N6        &c_arw
-				&lambda       &fn_arw       &kp LS(N9)    &kp LS(N0)    &kp LBKT
-				&kp RBKT      &none         &none         &none
-				&trans        &trans        &trans
-				/* Row 3: left=_,7,8,9,-,+ | right==,comma,dot,?,',bspc */
-				&none         &kp N7        &kp N8        &kp N9        &kp MINUS
-				&kp LS(EQUAL) &kp EQUAL     &kp COMMA     &kp DOT       &kp LS(FSLH)
-				&kp SQT       &kp BSPC                    &trans
-				/* Row 4: Shift, Undo, 0, dot, \, |, /, _, _, _, _ */
-				&kp LSHFT                   &kp LC(Z)     &kp N0        &kp DOT
-				&kp BSLH      &kp LS(BSLH)  &kp FSLH      &none         &none
-				&none         &none                       &kp RSHFT     &trans
-				/* Row 5: pass mods, Space=Shift, right thumb=0,dot */
-				&kp LCTRL     &kp LGUI      &trans                      &kp LSHFT
-				&kp N0        &kp DOT       &kp RCTRL
 				&trans        &trans        &trans
 			>;
 		};

@@ -1,0 +1,33 @@
+diff --git a/subsys/usb/device/class/Kconfig.cdc b/subsys/usb/device/class/Kconfig.cdc
+index 59a72e25b..af6eeba0f 100644
+--- a/subsys/usb/device/class/Kconfig.cdc
++++ b/subsys/usb/device/class/Kconfig.cdc
+@@ -25,18 +25,26 @@ config USB_CDC_ACM_RINGBUF_SIZE
+ 	  USB CDC ACM ring buffer size
+ 
+ config CDC_ACM_INTERRUPT_EP_MPS
+-	int
++	int "CDC ACM class interrupt IN endpoint size"
+ 	default 16
+ 	help
+ 	  CDC ACM class interrupt IN endpoint size
+ 
+ config CDC_ACM_BULK_EP_MPS
+-	int
++	int "CDC ACM class bulk endpoint size"
+ 	default 512 if USB_DC_HAS_HS_SUPPORT
+ 	default 64
+ 	help
+ 	  CDC ACM class bulk endpoints size
+ 
++config CDC_ACM_BULK_IN_EP_MPS
++	int "CDC ACM class bulk IN endpoint size"
++	default CDC_ACM_BULK_EP_MPS
++	help
++	  CDC ACM class bulk IN endpoint size.  Kept separate so the
++	  device->host direction can be shrunk (to fit controller USB SRAM)
++	  without changing the host->device (OUT) packet size.
++
+ config CDC_ACM_TX_DELAY_MS
+ 	int
+ 	default 100

@@ -31,7 +31,7 @@ done
 # Priority:
 #   1. CRUSH80_KEYMAP env var (explicit path to a .keymap file)
 #   2. Dotfiles directory (~/.config/DOTFILES/keybindings/crush80-zmk/)
-#   3. Repo default (keymaps/stock.keymap)
+#   3. Repo default (keymaps/example.keymap — full HRM layout)
 DOTFILES_ZMK="${CRUSH80_ZMK_CONFIG:-$HOME/.config/DOTFILES/keybindings/crush80-zmk}"
 
 if [ -n "${CRUSH80_KEYMAP:-}" ] && [ -f "$CRUSH80_KEYMAP" ]; then
@@ -45,9 +45,9 @@ elif [ -d "$DOTFILES_ZMK" ]; then
     echo "Syncing config from $DOTFILES_ZMK..."
     [ -f "$DOTFILES_ZMK/crush80.keymap" ] && cp "$DOTFILES_ZMK/crush80.keymap" "$REPO_DIR/zmk/boards/crush80/crush80.keymap"
     [ -f "$DOTFILES_ZMK/app.conf" ] && cp "$DOTFILES_ZMK/app.conf" "$REPO_DIR/conf/app.conf"
-elif [ -f "$REPO_DIR/keymaps/stock.keymap" ]; then
-    echo "No custom keymap configured — using keymaps/stock.keymap"
-    cp "$REPO_DIR/keymaps/stock.keymap" "$REPO_DIR/zmk/boards/crush80/crush80.keymap"
+elif [ -f "$REPO_DIR/keymaps/example.keymap" ]; then
+    echo "No custom keymap configured — using keymaps/example.keymap"
+    cp "$REPO_DIR/keymaps/example.keymap" "$REPO_DIR/zmk/boards/crush80/crush80.keymap"
 fi
 
 # ── Locate west workspace ────────────────────────────────────────────────────
@@ -61,9 +61,12 @@ else
     exit 1
 fi
 
-export PATH="$HOME/miniforge3/bin:$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:/usr/bin:$PATH"
+export PATH="$WORKSPACE_DIR/.venv/bin:$HOME/miniforge3/bin:$HOME/.local/bin:$HOME/go/bin:/usr/local/bin:/usr/bin:$PATH"
 # West may be installed in Python user site
-WEST_USER_BIN="$(python3 -m site --user-base 2>/dev/null)/bin"
+# NOTE: `python3 -m site --user-base` exits 1 inside a venv on Python 3.14
+# (user site-packages disabled) even though it still prints the path, so
+# guard it to avoid killing the script under `set -e`.
+WEST_USER_BIN="$(python3 -m site --user-base 2>/dev/null)/bin" || true
 [[ -d "$WEST_USER_BIN" ]] && export PATH="$WEST_USER_BIN:$PATH"
 
 export ZEPHYR_SDK_INSTALL_DIR="$HOME/zephyr-sdk-0.17.0"
@@ -77,6 +80,12 @@ echo "Syncing board files..."
 cp -r "$REPO_DIR/zmk/boards/crush80/"* "$WORKSPACE_DIR/zmk/boards/crush80/"
 cp -r "$REPO_DIR/zmk/drivers/led/"*    "$WORKSPACE_DIR/zmk/drivers/led/"
 cp -r "$REPO_DIR/zmk/dts/bindings/led/"* "$WORKSPACE_DIR/zmk/dts/bindings/led/"
+
+# Sync WS2812 LED strip driver + binding
+mkdir -p "$WORKSPACE_DIR/zmk/drivers/led_strip"
+cp -r "$REPO_DIR/zmk/drivers/led_strip/"* "$WORKSPACE_DIR/zmk/drivers/led_strip/"
+mkdir -p "$WORKSPACE_DIR/zmk/dts/bindings/led-strip"
+cp -r "$REPO_DIR/zmk/dts/bindings/led-strip/"* "$WORKSPACE_DIR/zmk/dts/bindings/led-strip/"
 
 # Sync platform drivers (usb, bluetooth, sensor, watchdog)
 for d in usb bluetooth sensor watchdog; do
@@ -98,6 +107,14 @@ cp "$REPO_DIR/zmk/zephyr/module.yml" "$WORKSPACE_DIR/zmk/zephyr/"
 mkdir -p "$WORKSPACE_DIR/zmk/src" "$WORKSPACE_DIR/zmk/include"
 cp "$REPO_DIR/zmk/src/"* "$WORKSPACE_DIR/zmk/src/" 2>/dev/null || true
 cp -r "$REPO_DIR/zmk/include/"* "$WORKSPACE_DIR/zmk/include/" 2>/dev/null || true
+
+# Sync rainy_rgb engine (rainy_rgb src + behaviors + dtsi + behavior binding)
+mkdir -p "$WORKSPACE_DIR/zmk/src/rainy_rgb" "$WORKSPACE_DIR/zmk/src/behaviors"
+cp -r "$REPO_DIR/zmk/src/rainy_rgb/"* "$WORKSPACE_DIR/zmk/src/rainy_rgb/"
+cp -r "$REPO_DIR/zmk/src/behaviors/"* "$WORKSPACE_DIR/zmk/src/behaviors/"
+mkdir -p "$WORKSPACE_DIR/zmk/dts" "$WORKSPACE_DIR/zmk/dts/bindings/behaviors"
+cp "$REPO_DIR/zmk/dts/rainy_rgb.dtsi" "$WORKSPACE_DIR/zmk/dts/"
+cp -r "$REPO_DIR/zmk/dts/bindings/behaviors/"* "$WORKSPACE_DIR/zmk/dts/bindings/behaviors/"
 
 # Sync conf files
 cp "$REPO_DIR/conf/"* "$WORKSPACE_DIR/conf/"

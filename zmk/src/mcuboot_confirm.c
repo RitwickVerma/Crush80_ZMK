@@ -91,6 +91,14 @@ static void confirm_work_handler(struct k_work *work)
 static int mcuboot_wdt_early_start(void)
 {
 	int rc;
+
+	/* TEST builds (no auto-confirm): don't arm the watchdog, or it would
+	 * reset the chip in a loop before the unconfirmed image reverts. */
+	if (!IS_ENABLED(CONFIG_CRUSH80_AUTO_CONFIRM)) {
+		LOG_INF("TEST build: watchdog not armed (auto-confirm disabled)");
+		return 0;
+	}
+
 	struct wdt_timeout_cfg wdt_cfg = {
 		.window = {
 			.min = 0,
@@ -131,6 +139,12 @@ SYS_INIT(mcuboot_wdt_early_start, POST_KERNEL, 1);
 
 static int mcuboot_confirm_init(void)
 {
+	/* TEST builds (no auto-confirm): never confirm, so a power-cycle
+	 * reverts to the previous confirmed image. */
+	if (!IS_ENABLED(CONFIG_CRUSH80_AUTO_CONFIRM)) {
+		LOG_INF("TEST build: auto-confirm DISABLED — power-cycle reverts");
+		return 0;
+	}
 	/* Feed WDT to reset the countdown — we've made it to APPLICATION */
 	if (wdt_channel_id >= 0) {
 		wdt_feed(wdt_dev, wdt_channel_id);
