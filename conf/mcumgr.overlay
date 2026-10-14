@@ -5,9 +5,8 @@
  * interfaces. It is given to ZMK Studio so stock ZMK Studio connects over
  * WebSerial (USB), exactly like any other ZMK board.
  *
- * Firmware flashing now goes through the MCUboot bootloader's own CDC ACM:
- * hold Fn+Esc (bootloader mode) -> serial recovery device appears as
- * "usb-ZEPHYR_MCUBOOT_..." -> mcumgr image upload against that device.
+ * Firmware updates go through the MCUboot bootloader's own CDC ACM instead:
+ * Fn+Esc -> "ZEPHYR MCUBOOT" (2fe3:0100) -> scripts/dfu.py / update.sh.
  */
 
 / {

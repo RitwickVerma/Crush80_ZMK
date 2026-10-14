@@ -83,8 +83,6 @@ echo "Repo:      $REPO_DIR"
 echo ""
 echo "Syncing board files..."
 cp -r "$REPO_DIR/zmk/boards/crush80/"* "$WORKSPACE_DIR/zmk/boards/crush80/"
-cp -r "$REPO_DIR/zmk/drivers/led/"*    "$WORKSPACE_DIR/zmk/drivers/led/"
-cp -r "$REPO_DIR/zmk/dts/bindings/led/"* "$WORKSPACE_DIR/zmk/dts/bindings/led/"
 
 # Sync WS2812 LED strip driver + binding
 mkdir -p "$WORKSPACE_DIR/zmk/drivers/led_strip"
@@ -170,7 +168,7 @@ if [ "$SKIP_BRIDGE" = false ]; then
         --pristine \
         -- \
         -DEXTRA_CONF_FILE="$WORKSPACE_DIR/conf/ota-bridge.conf;$BRIDGE_OVERRIDE" \
-        -DDTC_OVERLAY_FILE="$OVERLAY" \
+        -DDTC_OVERLAY_FILE="$WORKSPACE_DIR/conf/bridge.overlay" \
         -DBOARD_ROOT="$WORKSPACE_DIR/zmk" \
         -DDTS_ROOT="$WORKSPACE_DIR/zmk"
     rm -f "$BRIDGE_OVERRIDE"
@@ -200,26 +198,38 @@ echo "Collecting artifacts to dist/..."
 DIST="$WORKSPACE_DIR/dist"
 mkdir -p "$DIST"
 
-[ "$SKIP_BRIDGE"   = false ] && \
-    cp "build-bridge/zephyr/zmk.bin"         "$DIST/crush80-ota-bridge.bin"
-cp     "build-crush80/zephyr/zmk.signed.bin" "$DIST/crush80-zmk-app.signed.bin"
-cp     "build-crush80/zephyr/zmk.bin"        "$DIST/crush80-zmk-app.bin"
-if [ "$SKIP_MCUBOOT" = false ]; then
+rm -f "$DIST"/*.bin
+# OTA bridge, wrapped for the stock firmware's OTA handler (Telink header + CRC)
+if [ "$SKIP_BRIDGE" = false ]; then
+    python3 "$REPO_DIR/scripts/prepare_ota.py" build-bridge/zephyr/zmk.bin \
+        -o "$DIST/crush80-ota-bridge.bin"
+fi
+cp "build-crush80/zephyr/zmk.signed.bin" "$DIST/crush80-zmk-app.signed.bin"
+# Full image for flash 0x0 (MCUboot padded to 64 KB, then the signed app):
+# what install_zmk.sh writes through the bridge.
+if [ -f "build-mcuboot/zephyr/zephyr.bin" ]; then
     cp "build-mcuboot/zephyr/zephyr.bin" "$DIST/crush80-mcuboot.bin"
-elif [ -f "build-mcuboot/zephyr/zephyr.bin" ]; then
-    cp "build-mcuboot/zephyr/zephyr.bin" "$DIST/crush80-mcuboot.bin"
+    python3 - "$DIST" <<'PYEOF'
+import sys
+d = sys.argv[1]
+boot = open("build-mcuboot/zephyr/zephyr.bin", "rb").read()
+app = open("build-crush80/zephyr/zmk.signed.bin", "rb").read()
+assert len(boot) <= 0x10000, f"MCUboot is {len(boot)} B, larger than its 64 KB partition"
+open(f"{d}/crush80-combined.bin", "wb").write(boot + b"\xff" * (0x10000 - len(boot)) + app)
+PYEOF
 fi
 
 # Also copy to repo dist/ for easy Windows access
 mkdir -p "$REPO_DIR/dist"
+rm -f "$REPO_DIR/dist/"*.bin
 cp "$DIST"/*.bin "$REPO_DIR/dist/" 2>/dev/null || true
 
 echo ""
 echo "=============================================="
 echo "  Build complete!"
 echo ""
-echo "  dist/crush80-ota-bridge.bin      ← flash first"
-echo "  dist/crush80-zmk-app.signed.bin  ← flash second"
+ls -1 "$REPO_DIR/dist/"
 echo ""
-echo "  Next: bash flash.sh"
+echo "  Update a keyboard running ZMK:  Fn+Esc, then  bash update.sh"
+echo "  First install from stock:       bash install_zmk.sh"
 echo "=============================================="

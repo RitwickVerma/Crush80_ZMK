@@ -4,17 +4,18 @@
 # Two-stage process (all over USB, no EVK/SWS needed):
 #   1. OTA-flash a monolithic "bridge" firmware via the stock OTA protocol
 #      (B91 boot ROM dual-bank boot: bridge runs from bank 1 at 0x40000)
-#   2. Bridge exposes USB CDC ACM + mcumgr SMP; upload ZMK app via mcumgr
+#   2. The bridge exposes mcumgr on USB serial; scripts/flash_combined.py writes the
+#      full image (MCUboot + ZMK) to flash 0x0 through its flash_mgmt group
 #
 # Prerequisites:
 #   - Keyboard connected via USB, running stock firmware (VID 320f:5055)
 #   - Build artifacts in dist/:  bash build.sh
-#   - mcumgr installed:  setup.sh handles this, or: go install github.com/apache/mynewt-mcumgr-cli/mcumgr@latest
+#   - Built images: bash build.sh --build-mcuboot (dist/crush80-ota-bridge.bin, dist/crush80-combined.bin)
 #
 # Usage:
 #   ./install_zmk.sh              # interactive (asks for confirmation)
 #   ./install_zmk.sh -y           # non-interactive (skip confirmation)
-#   ./install_zmk.sh --bridge path/to/bridge.bin --zmk path/to/zmk.signed.bin
+#   ./install_zmk.sh --bridge path/to/bridge.bin --zmk path/to/combined.bin
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -35,7 +36,7 @@ header() { echo -e "\n${BOLD}$*${NC}"; }
 
 # ── Defaults ─────────────────────────────────────────────────
 BRIDGE_IMAGE="dist/crush80-ota-bridge.bin"
-ZMK_IMAGE="dist/crush80-zmk-app.signed.bin"
+ZMK_IMAGE="dist/crush80-combined.bin"
 STOCK_VID="320f"
 STOCK_PID="5055"
 ZMK_VID="1d50"
@@ -59,7 +60,7 @@ while [[ $# -gt 0 ]]; do
         --port)      SERIAL_PORT="$2"; shift 2 ;;
         -y|--yes)    AUTO_YES=1; shift ;;
         --help|-h)
-            echo "Usage: $0 [-y] [--bridge OTA_IMAGE] [--zmk ZMK_SIGNED_IMAGE] [--port SERIAL_PORT]"
+            echo "Usage: $0 [-y] [--bridge OTA_IMAGE] [--zmk COMBINED_IMAGE] [--port SERIAL_PORT]"
             echo "  SERIAL_PORT: /dev/ttyACM0 (Linux) or /dev/cu.usbmodemXXXX (macOS)"
             exit 0 ;;
         *) die "Unknown option: $1" ;;
@@ -71,8 +72,6 @@ for f in "$BRIDGE_IMAGE" "$ZMK_IMAGE"; do
     [[ -f "$f" ]] || die "Required file not found: $f (run: bash build.sh)"
 done
 
-MCUMGR="${MCUMGR:-$(command -v mcumgr 2>/dev/null || echo "$HOME/go/bin/mcumgr")}"
-[[ -x "$MCUMGR" ]] || die "mcumgr not found. Install: go install github.com/apache/mynewt-mcumgr-cli/mcumgr@latest"
 
 check_usb() {
     local vid="$1" pid="$2"
@@ -154,7 +153,7 @@ cleanup_msg() {
     warn "Installation did not complete."
     if check_usb "$ZMK_VID" "$ZMK_PID"; then
         info "Bridge/ZMK firmware is running. You can retry Stage 2:"
-        info "  $MCUMGR --conntype serial --connstring dev=$SERIAL_PORT,baud=115200 image upload $ZMK_IMAGE"
+        info "  python3 scripts/flash_combined.py $ZMK_IMAGE --port $SERIAL_PORT"
     else
         info "Try unplugging the keyboard, waiting 5s, and re-running this script."
     fi
@@ -167,9 +166,10 @@ START_TIME=$SECONDS
 header "=== Crush 80: Install ZMK ==="
 
 if check_usb "$ZMK_VID" "$ZMK_PID"; then
-    info "Keyboard is already running ZMK (or bridge) firmware."
-    info "To update ZMK, use: bash flash.sh stage2"
-    info "To reinstall from scratch, first restore stock: bash restore_stock.sh"
+    info "Keyboard is already running ZMK (or the install bridge)."
+    info "  ZMK:    update with Fn+Esc, then: bash update.sh"
+    info "  Bridge: finish an interrupted install with:"
+    info "          python3 scripts/flash_combined.py $ZMK_IMAGE"
     exit 0
 fi
 
@@ -184,7 +184,7 @@ info "  ZMK:    $ZMK_IMAGE ($(stat -c%s "$ZMK_IMAGE" 2>/dev/null || stat -f%z "$
 if [[ $AUTO_YES -eq 0 ]]; then
     echo ""
     info "This will replace the stock firmware with ZMK."
-    info "You can restore the original later with: bash restore_stock.sh"
+    info "Going back to stock is documented in docs/flashing.md."
     read -rp "Proceed? [y/N] " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         info "Aborted."
@@ -200,26 +200,21 @@ info "Bridge flashed. Keyboard will reboot..."
 wait_for_usb "$ZMK_VID" "$ZMK_PID" "bridge firmware" 30
 wait_for_serial "$SERIAL_PORT" 15
 
-# ── Stage 2: Upload ZMK via mcumgr ──────────────────────────
-header "=== Stage 2/2: Upload ZMK application via mcumgr ==="
-info "Uploading $ZMK_IMAGE..."
-"$MCUMGR" --conntype serial --connstring "dev=$SERIAL_PORT,baud=115200" \
-    image upload "$ZMK_IMAGE"
+# ── Stage 2: write MCUboot + ZMK to flash 0x0 through the bridge ────────
+# The bridge has no MCUboot image manager; flash_combined.py stages the image
+# at 0x80000 and commits it with the bridge's flash_mgmt trampoline, which
+# copies it to 0x0 and resets into MCUboot -> ZMK.
+header "=== Stage 2/2: Write MCUboot + ZMK ==="
+python3 scripts/flash_combined.py "$ZMK_IMAGE" --port "$SERIAL_PORT"
 
-info "Confirming image..."
-"$MCUMGR" --conntype serial --connstring "dev=$SERIAL_PORT,baud=115200" \
-    image confirm
-
-info "Resetting keyboard..."
-"$MCUMGR" --conntype serial --connstring "dev=$SERIAL_PORT,baud=115200" \
-    reset
-
-# Wait for ZMK to come up after reset
-sleep 3
-wait_for_usb "$ZMK_VID" "$ZMK_PID" "ZMK firmware" 30
+# The bridge and ZMK share 1d50:615e, so wait for the device to go away first:
+# returning on "present" would report success while flash is still being copied.
+info "Waiting for the keyboard to restart (do NOT unplug)..."
+for _ in $(seq 1 90); do check_usb "$ZMK_VID" "$ZMK_PID" || break; sleep 1; done
+wait_for_usb "$ZMK_VID" "$ZMK_PID" "ZMK firmware" 60
 
 ELAPSED=$((SECONDS - START_TIME))
 echo ""
 ok "Installation complete (${ELAPSED}s)"
 info "Keyboard is running ZMK firmware."
-info "To restore stock firmware: bash restore_stock.sh"
+info "Update later with Fn+Esc, then: bash update.sh"
