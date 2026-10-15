@@ -13,6 +13,7 @@ Replaces the closed vendor firmware with [ZMK](https://zmk.dev): USB, Bluetooth,
 [![Arch: RISC-V](https://img.shields.io/badge/arch-RISC--V-283272.svg)](docs/hardware.md)
 [![RGB: 154 LEDs](https://img.shields.io/badge/RGB-154%20LEDs%20%C2%B7%20OpenRGB-ff3d7f.svg)](#features)
 [![Status: daily driver](https://img.shields.io/badge/status-daily%20driver-success.svg)](#status)
+[![tip](https://img.shields.io/badge/tip-buy_covfefe_for_Ritwick-e91e63)](https://buycovfefefor.ritwickverma.dev/)
 
 ![Wobkey Crush 80](docs/images/hero.jpg)
 
@@ -134,5 +135,8 @@ third-party components. The Telink Bluetooth controller library is proprietary:
 it is downloaded at build time and is not part of this repository, and firmware
 images built with it must not be redistributed (which is why there are no
 prebuilt releases).
+
+If this saved your keyboard from the vendor firmware, you can
+[buy me a covfefe](https://buycovfefefor.ritwickverma.dev/).
 
 This is an independent project, not affiliated with Wobkey, Telink or Evision.
