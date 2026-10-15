@@ -81,6 +81,10 @@ Full instructions, including recovery and going back to stock:
 | Backspace | RGB on / off | ScrLk | Native (pass-through) layer |
 | \ or Enter | Next RGB effect | ↑ / ↓ | RGB brightness |
 
+Keys go to one output at a time. If the cable is in one computer while
+Bluetooth is connected to another, typing goes to the Bluetooth host and the
+cabled one gets nothing: press Fn+4 for USB. The choice is saved.
+
 The board keymap is [`zmk/boards/crush80/crush80.keymap`](zmk/boards/crush80/crush80.keymap).
 Edit it directly, point `CRUSH80_KEYMAP` at your own file, or remap live in
 [ZMK Studio](https://zmk.studio).
