@@ -58,6 +58,28 @@ LOG_MODULE_REGISTER(flash_mgmt, LOG_LEVEL_INF);
 /* Flash erase sector size */
 #define FLASH_SECTOR_SIZE      4096
 
+/* Over Bluetooth (the app build) any bonded host can send these commands, so
+ * the app allows only what scripts/force_recovery.py needs: reading the
+ * running image (slot0, for --backup) and erasing its header sector. That
+ * keeps MCUboot, the bond keys in the storage partition and the running code
+ * out of reach of a compromised paired computer. The OTA bridge has no
+ * Bluetooth; its USB serial port implies physical access, so it keeps the
+ * full command set the stock-to-ZMK install needs. */
+#define SLOT0_START            0x10000
+#define SLOT0_END              0x80000
+#define REMOTE_LIMITED         IS_ENABLED(CONFIG_BT)
+
+static bool erase_allowed(uint32_t off, uint32_t len)
+{
+	return !REMOTE_LIMITED || (off == SLOT0_START && len == FLASH_SECTOR_SIZE);
+}
+
+static bool read_allowed(uint32_t off, uint32_t len)
+{
+	return !REMOTE_LIMITED ||
+	       (off >= SLOT0_START && (uint64_t)off + len <= SLOT0_END);
+}
+
 static const struct device *flash_dev;
 
 /* -----------------------------------------------------------------------
@@ -222,6 +244,11 @@ static int flash_mgmt_erase(struct smp_streamer *ctxt)
 	}
 
 	/* Bounds check: must not touch protected region */
+	if (!erase_allowed(off, len)) {
+		LOG_ERR("erase: 0x%x+0x%x not allowed over Bluetooth", off, len);
+		return MGMT_ERR_EACCESSDENIED;
+	}
+
 	if ((uint64_t)off + len > FLASH_PROTECTED_START) {
 		LOG_ERR("erase: would touch protected region (off=0x%x len=0x%x)", off, len);
 		return MGMT_ERR_EACCESSDENIED;
@@ -259,6 +286,10 @@ static int flash_mgmt_write(struct smp_streamer *ctxt)
 	struct zcbor_string data = {0};
 	size_t decoded;
 	int rc;
+
+	if (REMOTE_LIMITED) {
+		return MGMT_ERR_EACCESSDENIED;
+	}
 
 	struct zcbor_map_decode_key_val decode_map[] = {
 		ZCBOR_MAP_DECODE_KEY_DECODER("off", zcbor_uint32_decode, &off),
@@ -320,6 +351,10 @@ static int flash_mgmt_read(struct smp_streamer *ctxt)
 	}
 
 	/* Bounds check */
+	if (!read_allowed(off, len)) {
+		return MGMT_ERR_EACCESSDENIED;
+	}
+
 	if ((uint64_t)off + len > FLASH_PROTECTED_START) {
 		return MGMT_ERR_EACCESSDENIED;
 	}
@@ -358,6 +393,10 @@ static int flash_mgmt_commit(struct smp_streamer *ctxt)
 	zcbor_state_t *zsd = ctxt->reader->zs;
 	uint32_t stg = 0, len = 0;
 	size_t decoded;
+
+	if (REMOTE_LIMITED) {
+		return MGMT_ERR_EACCESSDENIED;
+	}
 
 	struct zcbor_map_decode_key_val decode_map[] = {
 		ZCBOR_MAP_DECODE_KEY_DECODER("stg", zcbor_uint32_decode, &stg),
