@@ -77,7 +77,7 @@ Full instructions, including recovery and going back to stock:
 | F1 / F2 | Screen brightness | 4 | USB output |
 | F3 / F4 / F5 | Previous / play / next | 5 | Toggle USB / Bluetooth |
 | F6 / F7 / F8 | Mute / volume | Ins | Clear Bluetooth pairing |
-| F12 | Unlock ZMK Studio | M | Mac mode |
+| F12 | Unlock ZMK Studio | M | Mac mode: Win/Alt become Option/Cmd |
 | Backspace | RGB on / off | ScrLk | Native (pass-through) layer |
 | \ or Enter | Next RGB effect | ↑ / ↓ | RGB brightness |
 
@@ -87,7 +87,11 @@ cabled one gets nothing: press Fn+4 for USB. The choice is saved.
 
 The board keymap is [`zmk/boards/crush80/crush80.keymap`](zmk/boards/crush80/crush80.keymap).
 Edit it directly, point `CRUSH80_KEYMAP` at your own file, or remap live in
-[ZMK Studio](https://zmk.studio).
+[ZMK Studio](https://zmk.studio): open it in Chrome or Edge (it connects over
+Web Bluetooth), connect to the keyboard, then press Fn+F12 to unlock. Changes
+are saved on the keyboard. Studio can also add up to three new layers. Combos,
+macros and hold-tap timings are not editable in Studio; change those in the
+keymap file and reflash.
 
 ## Inside the keyboard
 
