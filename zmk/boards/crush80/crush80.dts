@@ -228,7 +228,7 @@
 	 * Key matrix scan.
 	 *
 	 * GPIO ASSIGNMENT STATUS: LIKELY CORRECT
-	 * v2_update.md explicitly states "Same 16x6 scan routine, same pin assignments"
+	 * The vendor's v2_update.md (stock firmware notes, not in this repo) states "Same 16x6 scan routine, same pin assignments"
 	 * between Crush 80 and the Evision platform reference.
 	 * Rainy 75 Pro uses the same platform and has been hardware-validated.
 	 *

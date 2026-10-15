@@ -13,5 +13,6 @@ SUBSYSTEM=="hidraw", ATTRS{idVendor}=="320f", ATTRS{idProduct}=="5088", MODE="06
 SUBSYSTEM=="tty", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="615e", MODE="0666", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="615e", MODE="0666", TAG+="uaccess"
 
-# MCUboot serial recovery (Fn+Esc, or no valid app): firmware uploads go here.
+# MCUboot serial recovery (scripts/force_recovery.py, or no valid app):
+# firmware uploads go here.
 SUBSYSTEM=="tty", ATTRS{idVendor}=="2fe3", ATTRS{idProduct}=="0100", MODE="0666", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"
