@@ -37,7 +37,7 @@ LOG_MODULE_REGISTER(rrgb_engine, CONFIG_LOG_DEFAULT_LEVEL);
  *
  * Sample what the loop believes AND what the pin actually reads, and record
  * every change into the USB diagnostic ring (survives replug on battery,
- * readable with reverse/tools/usb_diag.py).
+ * readable over SMP group 64 cmd 4; the reader tool is not in this repo).
  */
 /* Keepalive cadence is bounded by the ring, not by curiosity: 64 entries
  * shared with the USB events, so a 5 min tick emits ~96 entries overnight and
@@ -118,6 +118,10 @@ static uint32_t anim_phase_q8;   /* .8 fixed-point animation phase accumulator *
  * so a volatile flag without locking is enough. */
 static struct rrgb host_px[RRGB_N];
 static volatile bool host_mode;
+/* Set by the Fn escape hatch: per-LED host writes are ignored until the host
+ * explicitly re-enters or leaves host mode (rrgb_host_fill / _clear), so a
+ * continuous stream (OpenRGB Direct) cannot re-take the LEDs right away. */
+static volatile bool host_locked_out;
 
 #define RRGB_PERSIST_VERSION 1
 
@@ -174,7 +178,7 @@ static void rrgb_loop(void *a, void *b, void *c) {
     bool rail_on = true;        /* driver init leaves PC2 HIGH */
     uint32_t dark_ticks = 0;
     for (;;) {
-        /* Deadline-based pacing: render_once sleeps through the ~2.66 ms DMA
+        /* Deadline-based pacing: render_once sleeps through the ~4.9 ms DMA
          * transfer (End-IRQ), so sleep only the remainder of the frame period
          * to hold a steady RRGB_FPS regardless of render duration. */
         int64_t deadline = k_uptime_get() + RRGB_PERIOD_MS;
@@ -252,6 +256,7 @@ static void rrgb_loop(void *a, void *b, void *c) {
 static bool host_mode_escape(void) {
     if (!host_mode) { return false; }
     host_mode = false;
+    host_locked_out = true;
     LOG_INF("host mode off (Fn control)");
     return true;
 }
@@ -288,6 +293,7 @@ void rrgb_speed_step(int dir) {
 /* --- Host direct-pixel API (called from the mcumgr SMP thread) --- */
 
 void rrgb_host_set_pixels(const uint8_t *quads, uint16_t count) {
+    if (host_locked_out) { return; }
     if (!host_mode) {
         /* Entering host mode: start from black so a partial set lights
          * exactly the requested keys and nothing else. */
@@ -303,6 +309,7 @@ void rrgb_host_set_pixels(const uint8_t *quads, uint16_t count) {
 }
 
 void rrgb_host_fill(uint8_t r, uint8_t g, uint8_t b) {
+    host_locked_out = false;
     for (uint16_t i = 0; i < RRGB_N; i++) { host_px[i] = (struct rrgb){r, g, b}; }
     host_mode = true;
 }
@@ -311,7 +318,7 @@ void rrgb_host_fill(uint8_t r, uint8_t g, uint8_t b) {
  * rrgb_host_set_pixels (which maps a keymap *position*), this indexes the raw
  * WS2812 chain. */
 void rrgb_host_set_led(uint16_t led, uint8_t r, uint8_t g, uint8_t b) {
-    if (led >= RRGB_N) { return; }
+    if (led >= RRGB_N || host_locked_out) { return; }
     if (!host_mode) {
         /* Entering host mode: start from black so a partial set lights
          * exactly the requested LEDs and nothing else. */
@@ -323,6 +330,7 @@ void rrgb_host_set_led(uint16_t led, uint8_t r, uint8_t g, uint8_t b) {
 
 void rrgb_host_clear(void) {
     host_mode = false;
+    host_locked_out = false;
 }
 
 bool rrgb_host_active(void) {

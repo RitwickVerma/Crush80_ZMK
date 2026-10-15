@@ -5,7 +5,7 @@
 #include "led_map.h"     /* rrgb_led_for_position */
 
 #define CAPS_POS         50   /* keymap position of CapsLock (home row) */
-#define BAT_SHOW_FRAMES  90   /* ~3s at 30fps */
+#define BAT_SHOW_FRAMES  150  /* ~3s at the engine's 50 fps (RRGB_FPS) */
 #define BAT_SEG_FIRST    17   /* number row keys 1..0 = positions 17..26 */
 #define BAT_SEG_COUNT    10
 

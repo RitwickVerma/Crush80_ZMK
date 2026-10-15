@@ -144,12 +144,15 @@ static const struct hid_ops openrgb_ops = {
 /* Send a 64-byte response.  response[63] carries END_OF_MESSAGE. */
 static void openrgb_send(uint8_t *response) {
     response[OPENRGB_EP_SIZE - 1] = RSP_END_OF_MESSAGE;
-    if (k_sem_take(&openrgb_in_sem, K_MSEC(50)) == 0) {
-        int err = hid_int_ep_write(openrgb_dev, response, OPENRGB_EP_SIZE, NULL);
-        if (err) {
-            k_sem_give(&openrgb_in_sem);
-        }
-        /* on success the sem is given back by in_ready_cb */
+    /* A bus reset drops an in-flight IN transfer without calling
+     * in_ready_cb, so a timeout here means the token was lost, not that a
+     * transfer is still pending: write anyway. A successful write gives the
+     * token back through in_ready_cb, which resynchronises the semaphore. */
+    bool have_token = k_sem_take(&openrgb_in_sem, K_MSEC(50)) == 0;
+    int err = hid_int_ep_write(openrgb_dev, response, OPENRGB_EP_SIZE, NULL);
+
+    if (err && have_token) {
+        k_sem_give(&openrgb_in_sem);
     }
 }
 
@@ -185,6 +188,18 @@ static void cmd_get_mode_info(uint8_t *rsp) {
     struct rrgb_persist p;
     rrgb_get_persist(&p);
 
+    /* Fn+RGB on the keyboard leaves Direct mode behind the host's back:
+     * report the effect that is actually running. */
+    if (openrgb_mode == OPENRGB_MODE_DIRECT && !rrgb_host_active()) {
+        openrgb_mode = 1;
+        for (uint8_t m = 1; m < OPENRGB_MODE_DIRECT; m++) {
+            if (mode_to_effect[m] == p.effect) {
+                openrgb_mode = m;
+                break;
+            }
+        }
+    }
+
     rsp[1] = openrgb_mode;
     rsp[2] = p.speed;
     rsp[3] = p.hue;
@@ -218,15 +233,16 @@ static void cmd_get_led_info(uint8_t *rsp, const uint8_t *data) {
     uint8_t first = data[1];
     uint8_t count = data[2];
 
+    /* 7 bytes per LED after the command byte: at most 8 fit in 64 bytes.
+     * Capping the loop (not just skipping) keeps o from wrapping. */
+    count = MIN(count, (OPENRGB_EP_SIZE - 8) / 7 + 1);
+
     for (uint8_t i = 0; i < count; i++) {
         uint16_t led = (uint16_t)first + i;
-        uint8_t o = (uint8_t)(1 + i * 7);
+        uint8_t o = 1 + i * 7;
 
-        if (led >= OPENRGB_LED_COUNT || o > (OPENRGB_EP_SIZE - 8)) {
-            /* Out of range or would overrun the 64-byte report. */
-            if (o <= OPENRGB_EP_SIZE - 4) {
-                rsp[o + 2] = RSP_FAILURE; /* flags position */
-            }
+        if (led >= OPENRGB_LED_COUNT) {
+            rsp[o + 2] = RSP_FAILURE; /* flags position */
             continue;
         }
 
@@ -328,9 +344,15 @@ static void cmd_set_single_led(uint8_t *rsp, const uint8_t *data) {
 
 /* Bulk LED write: data[1]=first, data[2]=count, then RGB triples. No response
  * (matches the canonical firmware — throughput beats acking here). */
-static void cmd_set_leds(const uint8_t *data) {
+static void cmd_set_leds(const uint8_t *data, uint32_t len) {
+    if (len < 3) {
+        return;
+    }
+
     uint16_t first = data[1];
-    uint8_t count = data[2];
+    /* The host picks count; only as many triples as the packet holds (20
+     * in 64 bytes) are real data. */
+    uint8_t count = MIN(data[2], (len - 3) / 3);
 
     for (uint8_t i = 0; i < count; i++) {
         uint16_t led = first + i;
@@ -351,7 +373,7 @@ static void openrgb_handle(const uint8_t *data, uint32_t len) {
     uint8_t cmd = data[0];
 
     if (cmd == CMD_SET_LEDS) {
-        cmd_set_leds(data);
+        cmd_set_leds(data, len);
         return; /* no response */
     }
 
