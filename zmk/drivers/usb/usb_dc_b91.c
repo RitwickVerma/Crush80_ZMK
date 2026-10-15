@@ -73,6 +73,7 @@ static struct usb_dc_b91_state state;
 
 static uint16_t usb_sram_next; /* next free byte in USB SRAM (bump allocator); 16-bit so
 				* a pool filled to exactly 256 B doesn't wrap to 0 */
+static uint8_t iso_mode_shadow; /* B91_USB_ISO_MODE as written: bit set = ISO EP */
 
 /* ========================================================================== *
  *  USB Diagnostic Event Ring                                                  *
@@ -914,6 +915,11 @@ int usb_dc_attach(void)
 		usb_write8(B91_USB_EP_BUF_ADDR(i), 0);
 	}
 
+	/* No ISO EPs until one is configured as such: the register resets to
+	 * 0xC0 (EP6/EP7 isochronous), see usb_dc_ep_configure(). */
+	iso_mode_shadow = 0;
+	usb_write8(B91_USB_ISO_MODE, iso_mode_shadow);
+
 	/* 7. Timing calibration (required per SDK/original firmware) */
 	usb_write8(B91_USB_SUPS_CYC_CALI, B91_USB_TIMING_CALIB);
 
@@ -1388,6 +1394,23 @@ int usb_dc_ep_configure(const struct usb_dc_ep_cfg_data *const cfg)
 	 * shrink the limit for every endpoint (e.g. HID interrupt EP after
 	 * CDC ACM bulk EP would break bulk transfers).
 	 */
+
+	/*
+	 * Transfer mode per EP.  The ISO mode register resets to 0xC0: EP6
+	 * (OUT) and EP7 (IN) come up isochronous, meant for audio.  A bulk or
+	 * interrupt EP there runs without handshakes, so transfers fail (here:
+	 * the OpenRGB raw-HID OUT endpoint is EP6, and every host write failed
+	 * with EPROTO).  Set the bit from the EP type instead, from a shadow
+	 * that attach clears before enumeration (fix from scholzri/rainy75-zmk).
+	 */
+	if (n >= 1 && n <= 7) {
+		if (cfg->ep_type == USB_DC_EP_ISOCHRONOUS) {
+			iso_mode_shadow |= b91_ep_bit(n);
+		} else {
+			iso_mode_shadow &= ~b91_ep_bit(n);
+		}
+		usb_write8(B91_USB_ISO_MODE, iso_mode_shadow);
+	}
 
 	/*
 	 * Allocate USB SRAM buffer for this EP.
