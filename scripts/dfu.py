@@ -129,7 +129,7 @@ class Smp:
                                + struct.pack(">H", crc16_xmodem(pkt)))
         first = True
         while raw:
-            room = LINE_MAX - 3
+            room = (LINE_MAX - 3) // 4 * 4     # MCUboot decodes each line separately
             part, raw = raw[:room], raw[room:]
             os.write(self.fd, (b"\x06\x09" if first else b"\x04\x14") + part + b"\n")
             first = False
