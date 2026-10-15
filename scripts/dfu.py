@@ -188,6 +188,14 @@ def find_port():
         hits = sorted(glob.glob("/dev/serial/by-id/*MCUBOOT*"))
         if hits:
             return os.path.realpath(hits[0])
+        if sys.platform == "darwin":
+            # macOS names ports by location, not product: take the only one.
+            mac = glob.glob("/dev/cu.usbmodem*")
+            if len(mac) == 1:
+                return mac[0]
+            if len(mac) > 1:
+                sys.exit("Several USB serial ports; pick the bootloader with --port: "
+                         + ", ".join(sorted(mac)))
         if not told:
             print("Waiting for the bootloader (put the keyboard in recovery, see docs/flashing.md)...")
             told = True

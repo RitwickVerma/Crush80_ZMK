@@ -6,11 +6,10 @@ bridge's custom flash_mgmt COMMIT (group 64) command, which erases bank 0,
 copies the staged image to 0x0 and resets into MCUboot -> ZMK.
 
 Usage:
-    python3 flash_combined.py combined.bin [--port /dev/ttyACM0] [--stg 0x80000]
+    python3 flash_combined.py combined.bin [--port PORT] [--stg 0x80000]
 """
 import argparse
 import base64
-import glob
 import struct
 import sys
 import time
@@ -97,10 +96,16 @@ class SMP:
         self.ser.close()
 
 
+BRIDGE_VID, BRIDGE_PID = 0x1D50, 0x615E
+
+
 def detect_port():
-    for dev in glob.glob('/dev/ttyACM*'):
-        return dev
-    return None
+    # Match the OTA bridge by USB ID, never just the first serial port: flash
+    # commands sent to some other device would at best fail.
+    from serial.tools import list_ports
+    hits = [p.device for p in list_ports.comports()
+            if p.vid == BRIDGE_VID and p.pid == BRIDGE_PID]
+    return hits[0] if len(hits) == 1 else None
 
 
 def main():
@@ -116,7 +121,7 @@ def main():
 
     port = args.port or detect_port()
     if not port:
-        sys.exit('ERROR: no /dev/ttyACM* found')
+        sys.exit('ERROR: OTA bridge serial port (USB 1d50:615e) not found; pass --port')
 
     print(f'Image: {len(image)} bytes -> staging 0x{stg:X}')
     print(f'Port:  {port}')

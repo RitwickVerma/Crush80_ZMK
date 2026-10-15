@@ -4,13 +4,16 @@
 # Supports macOS and Linux.
 #
 # Outputs go to dist/ (gitignored):
-#   dist/crush80-ota-bridge.bin    ← flash first via flash_ota.py
-#   dist/crush80-zmk-app.signed.bin ← flash second via mcumgr
-#   dist/crush80-mcuboot.bin       ← only needed for SWS/hardware recovery
+#   dist/crush80-zmk-app.signed.bin ← updates: bash update.sh (MCUboot recovery)
+#   dist/crush80-ota-bridge.bin     ← first install, stage 1 (install_zmk.sh)
+#   dist/crush80-combined.bin       ← first install, stage 2 (needs MCUboot)
+#   dist/crush80-mcuboot.bin        ← MCUboot alone, for SWS/hardware recovery
 #
 # Options:
 #   bash build.sh --skip-bridge    skip OTA bridge build (faster rebuild)
-#   bash build.sh --skip-mcuboot   skip MCUboot build
+#   bash build.sh --build-mcuboot  also build MCUboot (needed once, for the
+#                                  combined image a first install writes)
+#   bash build.sh --skip-mcuboot   skip MCUboot build (the default)
 
 set -euo pipefail
 
@@ -129,9 +132,8 @@ cd "$WORKSPACE_DIR"
 CONF="$REPO_DIR/conf/app.conf"
 OVERLAY="$WORKSPACE_DIR/conf/app.overlay"
 
-# Crush 80 specific overrides:
-#   app.conf already sets CONFIG_ZMK_KEYBOARD_NAME but this override
-#   ensures the name is correct even if app.conf is not the primary conf.
+# Crush 80 specific overrides. CONFIG_ZMK_KEYBOARD_NAME repeats app.conf's
+# value on purpose: a CRUSH80_APP_CONF without it still gets the right name.
 OVERRIDE_CONF="$(mktemp /tmp/crush80_override_XXXXXX)"
 cat > "$OVERRIDE_CONF" << 'EOF'
 CONFIG_ZMK_KEYBOARD_NAME="Crush 80"
@@ -232,4 +234,7 @@ ls -1 "$REPO_DIR/dist/"
 echo ""
 echo "  Update a keyboard running ZMK:  see docs/flashing.md, then  bash update.sh"
 echo "  First install from stock:       bash install_zmk.sh"
+if [ ! -f "$DIST/crush80-combined.bin" ]; then
+    echo "    (needs crush80-combined.bin: run  bash build.sh --build-mcuboot  once)"
+fi
 echo "=============================================="
