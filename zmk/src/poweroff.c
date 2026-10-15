@@ -117,7 +117,7 @@ void z_sys_poweroff(void)
 
 	/* Disable USB DP pull-up to cleanly detach from host.
 	 * Analog register 0x0B bit 7 = DP pull-up enable. */
-	analog_write(0x0B, 0x00);
+	analog_write(0x0B, analog_read(0x0B) & ~BIT(7));
 
 	/* Configure 100K pull-downs on column pins and 1M pull-ups on row pins
 	 * via analog registers. These survive deep sleep (digital GPIO doesn't).
