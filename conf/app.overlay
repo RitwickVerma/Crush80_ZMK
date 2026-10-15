@@ -1,0 +1,6 @@
+/*
+ * App devicetree overlay. Intentionally empty: the app exposes no USB serial
+ * port, so the keyboard and the OpenRGB raw HID are USB interfaces 0 and 1
+ * (OpenRGB only probes interface 1). See conf/app.conf. The OTA bridge, which
+ * does need a serial port for mcumgr, uses conf/bridge.overlay instead.
+ */

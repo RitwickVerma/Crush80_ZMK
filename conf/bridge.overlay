@@ -1,7 +1,7 @@
 /*
  * OTA bridge only: the single USB CDC ACM carries mcumgr SMP (and the console),
  * so install_zmk.sh stage 2 can write ZMK through flash_mgmt. The app build
- * gives that port to ZMK Studio instead (conf/mcumgr.overlay).
+ * has no serial port at all (conf/app.overlay).
  */
 
 / {

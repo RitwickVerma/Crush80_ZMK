@@ -127,7 +127,7 @@ echo "  Done."
 cd "$WORKSPACE_DIR"
 
 CONF="$REPO_DIR/conf/app.conf"
-OVERLAY="$WORKSPACE_DIR/conf/mcumgr.overlay"
+OVERLAY="$WORKSPACE_DIR/conf/app.overlay"
 
 # Crush 80 specific overrides:
 #   app.conf already sets CONFIG_ZMK_KEYBOARD_NAME but this override
