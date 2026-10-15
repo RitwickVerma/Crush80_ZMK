@@ -1,5 +1,30 @@
+From 94c9df6817025999d49a37747738c99a74e6faf5 Mon Sep 17 00:00:00 2001
+From: Ritwick Verma <verma1997@gmail.com>
+Date: Thu, 15 Oct 2026 15:33:22 -0700
+Subject: [PATCH] zmk: ZMK Studio RPC over USB raw HID
+ (CONFIG_ZMK_STUDIO_TRANSPORT_USB_HID)
+
+Optional Studio transport over a report-ID 0x0C collection on the
+keyboard HID interface, for boards whose USB SRAM has no room for a CDC
+ACM port. Requests arrive as SET_REPORT(Feature); responses go out as
+15-byte input reports. TX is dropped while no client has sent a request
+for 5 s, so the RPC core never blocks and Studio reports never collide
+with key reports. Off by default; needs the matching zmk-studio web app
+change (patches/zmk-studio-webhid.patch).
+---
+ app/include/zmk/hid.h                      |  22 ++++
+ app/include/zmk/studio/hid_rpc_transport.h |  16 +++
+ app/include/zmk/usb_hid.h                  |   2 +
+ app/src/studio/CMakeLists.txt              |   1 +
+ app/src/studio/Kconfig                     |   8 ++
+ app/src/studio/hid_rpc_transport.c         | 134 +++++++++++++++++++++
+ app/src/usb_hid.c                          |  39 ++++++
+ 7 files changed, 222 insertions(+)
+ create mode 100644 app/include/zmk/studio/hid_rpc_transport.h
+ create mode 100644 app/src/studio/hid_rpc_transport.c
+
 diff --git a/app/include/zmk/hid.h b/app/include/zmk/hid.h
-index 962180e7..b843186b 100644
+index 962180e..b843186 100644
 --- a/app/include/zmk/hid.h
 +++ b/app/include/zmk/hid.h
 @@ -76,6 +76,10 @@
@@ -40,7 +65,7 @@ index 962180e7..b843186b 100644
      HID_USAGE(HID_USAGE_GD_MOUSE),
 diff --git a/app/include/zmk/studio/hid_rpc_transport.h b/app/include/zmk/studio/hid_rpc_transport.h
 new file mode 100644
-index 00000000..ee6891a5
+index 0000000..ee6891a
 --- /dev/null
 +++ b/app/include/zmk/studio/hid_rpc_transport.h
 @@ -0,0 +1,16 @@
@@ -61,7 +86,7 @@ index 00000000..ee6891a5
 + */
 +void zmk_studio_hid_receive(const uint8_t *payload, size_t len);
 diff --git a/app/include/zmk/usb_hid.h b/app/include/zmk/usb_hid.h
-index 785f6af8..cee1a913 100644
+index 785f6af..cee1a91 100644
 --- a/app/include/zmk/usb_hid.h
 +++ b/app/include/zmk/usb_hid.h
 @@ -7,9 +7,11 @@
@@ -77,7 +102,7 @@ index 785f6af8..cee1a913 100644
  int zmk_usb_hid_send_mouse_report(void);
  #endif // IS_ENABLED(CONFIG_ZMK_POINTING)
 diff --git a/app/src/studio/CMakeLists.txt b/app/src/studio/CMakeLists.txt
-index a8417dd7..7319f730 100644
+index a8417dd..7319f73 100644
 --- a/app/src/studio/CMakeLists.txt
 +++ b/app/src/studio/CMakeLists.txt
 @@ -14,4 +14,5 @@ target_sources(app PRIVATE behavior_subsystem.c)
@@ -88,7 +113,7 @@ index a8417dd7..7319f730 100644
  target_sources_ifdef(CONFIG_ZMK_STUDIO_TRANSPORT_BLE app PRIVATE gatt_rpc_transport.c)
 \ No newline at end of file
 diff --git a/app/src/studio/Kconfig b/app/src/studio/Kconfig
-index d7d3d411..424c97ae 100644
+index d7d3d41..424c97a 100644
 --- a/app/src/studio/Kconfig
 +++ b/app/src/studio/Kconfig
 @@ -64,6 +64,14 @@ config ZMK_STUDIO_TRANSPORT_UART_RX_STACK_SIZE
@@ -108,10 +133,10 @@ index d7d3d411..424c97ae 100644
      select RING_BUFFER
 diff --git a/app/src/studio/hid_rpc_transport.c b/app/src/studio/hid_rpc_transport.c
 new file mode 100644
-index 00000000..cdcbc24f
+index 0000000..b09a289
 --- /dev/null
 +++ b/app/src/studio/hid_rpc_transport.c
-@@ -0,0 +1,112 @@
+@@ -0,0 +1,134 @@
 +/*
 + * Copyright (c) 2025
 + * SPDX-License-Identifier: MIT
@@ -149,11 +174,30 @@ index 00000000..cdcbc24f
 +#define HID_STUDIO_PAYLOAD ZMK_HID_STUDIO_REPORT_PAYLOAD_SIZE
 +/* Payload minus [seq][len] header. */
 +#define HID_STUDIO_CHUNK (HID_STUDIO_PAYLOAD - 2)
++/* Drop TX once no client has sent a request for this long. The RPC core raises
++ * notifications (lock-state changes, keymap events) even with no Studio client
++ * connected; writing those 16-byte reports on the keyboard IN endpoint would
++ * collide with the 7-byte key reports and trigger the B91 IN re-transmit bug
++ * (ghost presses / dropped keys). */
++#define HID_STUDIO_CLIENT_IDLE_TIMEOUT_MS 5000
 +
 +static uint8_t tx_seq;
++static int64_t last_rx_ms;
++
++static bool client_active(void) {
++    return (k_uptime_get() - last_rx_ms) <= HID_STUDIO_CLIENT_IDLE_TIMEOUT_MS;
++}
 +
 +static void hid_tx_notify(struct ring_buf *tx_buf, size_t added, bool msg_done, void *user_data) {
 +    ARG_UNUSED(user_data);
++
++    if (!client_active()) {
++        /* No active Studio client — discard, like the GATT transport does
++         * when there is no connection. Must drain the ring buffer so the RPC
++         * encoder never stalls on a full buffer. */
++        ring_buf_reset(tx_buf);
++        return;
++    }
 +
 +    if (!msg_done && ring_buf_size_get(tx_buf) <= (ring_buf_capacity_get(tx_buf) / 2)) {
 +        return;
@@ -188,6 +232,9 @@ index 00000000..cdcbc24f
 +    if (len < 3) {
 +        return;
 +    }
++
++    /* Any client activity marks the transport as having an active session. */
++    last_rx_ms = k_uptime_get();
 +
 +    uint8_t seq = payload[0];
 +    uint8_t n = payload[1];
@@ -225,7 +272,7 @@ index 00000000..cdcbc24f
 +
 +ZMK_RPC_TRANSPORT(hid, ZMK_TRANSPORT_USB, hid_rx_start, hid_rx_stop, NULL, hid_tx_notify);
 diff --git a/app/src/usb_hid.c b/app/src/usb_hid.c
-index 9adc7db8..31730b58 100644
+index 662b92a..31730b5 100644
 --- a/app/src/usb_hid.c
 +++ b/app/src/usb_hid.c
 @@ -6,6 +6,7 @@
@@ -279,34 +326,7 @@ index 9adc7db8..31730b58 100644
          default:
              return -ENOTSUP;
          }
-@@ -187,7 +210,10 @@ static const struct hid_ops ops = {
- static int zmk_usb_hid_send_report(const uint8_t *report, size_t len) {
-     switch (zmk_usb_get_status()) {
-     case USB_DC_SUSPEND:
--        return usb_wakeup_request();
-+        // A keypress while suspended is the user asking for the link back.
-+        // usb.c owns how: remote wakeup where the host armed it, re-presenting
-+        // the device where it did not.
-+        return zmk_usb_user_activity_while_suspended();
-     case USB_DC_ERROR:
-     case USB_DC_RESET:
-     case USB_DC_DISCONNECTED:
-@@ -201,6 +227,14 @@ static int zmk_usb_hid_send_report(const uint8_t *report, size_t len) {
-             k_sem_give(&hid_sem);
-         }
- 
-+        // Feed the dead-bus heartbeat's HID-starvation detector: a device
-+        // that is CONFIGURED but whose interrupt IN endpoint is never
-+        // drained (host HID driver failed to bind, seen after macOS
-+        // dark-wake enumerations) fails every write with -EAGAIN. A failure
-+        // also asks the host to resume, which covers sleeps that never
-+        // delivered a clean SUSPEND.
-+        zmk_usb_report_send_result(err == 0);
-+
-         return err;
-     }
- }
-@@ -222,6 +256,22 @@ int zmk_usb_hid_send_consumer_report(void) {
+@@ -233,6 +256,22 @@ int zmk_usb_hid_send_consumer_report(void) {
      return zmk_usb_hid_send_report((uint8_t *)report, sizeof(*report));
  }
  
@@ -329,3 +349,6 @@ index 9adc7db8..31730b58 100644
  #if IS_ENABLED(CONFIG_ZMK_POINTING)
  int zmk_usb_hid_send_mouse_report() {
  #if IS_ENABLED(CONFIG_ZMK_USB_BOOT)
+-- 
+2.56.0
+

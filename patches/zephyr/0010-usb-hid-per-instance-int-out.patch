@@ -121,15 +121,19 @@ diff --git a/subsys/usb/device/class/hid/core.c b/subsys/usb/device/class/hid/co
  
  struct hid_device_info {
  	const uint8_t *report_desc;
-@@ -572,7 +582,6 @@ static void hid_int_in(uint8_t ep, enum usb_dc_ep_cb_status_code ep_status)
+@@ -572,8 +582,9 @@ static void hid_int_in(uint8_t ep, enum usb_dc_ep_cb_status_code ep_status)
  	dev_data->ops->int_in_ready(common->dev);
  }
  
 -#ifdef CONFIG_ENABLE_HID_INT_OUT_EP
- static void hid_int_out(uint8_t ep, enum usb_dc_ep_cb_status_code ep_status)
+-static void hid_int_out(uint8_t ep, enum usb_dc_ep_cb_status_code ep_status)
++/* Only referenced by instance 1 (DEFINE_HID_EP), so unused with one instance. */
++static __maybe_unused void hid_int_out(uint8_t ep,
++				       enum usb_dc_ep_cb_status_code ep_status)
  {
  	struct hid_device_info *dev_data;
-@@ -593,7 +602,6 @@ static void hid_int_out(uint8_t ep, enum usb_dc_ep_cb_status_code ep_status)
+ 	struct usb_dev_data *common;
+@@ -593,7 +604,6 @@ static void hid_int_out(uint8_t ep, enum usb_dc_ep_cb_status_code ep_status)
  
  	dev_data->ops->int_out_ready(common->dev);
  }
@@ -137,7 +141,7 @@ diff --git a/subsys/usb/device/class/hid/core.c b/subsys/usb/device/class/hid/co
  
  #define INITIALIZER_EP_DATA(cb, addr)			\
  	{						\
-@@ -601,19 +609,17 @@ static void hid_int_out(uint8_t ep, enum usb_dc_ep_cb_status_code ep_status)
+@@ -601,19 +611,17 @@ static void hid_int_out(uint8_t ep, enum usb_dc_ep_cb_status_code ep_status)
  		.ep_addr = addr,			\
  	}
  
@@ -165,7 +169,7 @@ diff --git a/subsys/usb/device/class/hid/core.c b/subsys/usb/device/class/hid/co
  
  static void hid_interface_config(struct usb_desc_header *head,
  				 uint8_t bInterfaceNumber)
-@@ -625,9 +631,6 @@ static void hid_interface_config(struct usb_desc_header *head,
+@@ -625,9 +633,6 @@ static void hid_interface_config(struct usb_desc_header *head,
  	LOG_DBG("");
  
  	desc->if0.bInterfaceNumber = bInterfaceNumber;
@@ -175,7 +179,7 @@ diff --git a/subsys/usb/device/class/hid/core.c b/subsys/usb/device/class/hid/co
  }
  
  #define DEFINE_HID_CFG_DATA(x, _)					\
-@@ -708,14 +711,15 @@ int hid_int_ep_write(const struct device *dev, const uint8_t *data, uint32_t dat
+@@ -708,14 +713,15 @@ int hid_int_ep_write(const struct device *dev, const uint8_t *data, uint32_t dat
  int hid_int_ep_read(const struct device *dev, uint8_t *data, uint32_t max_data_len,
  		    uint32_t *ret_bytes)
  {

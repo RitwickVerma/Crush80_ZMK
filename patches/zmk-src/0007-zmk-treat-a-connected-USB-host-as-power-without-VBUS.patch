@@ -1,0 +1,42 @@
+From 5f1ae130e16733d66cc3e6f2e0b3ffa9bb662e58 Mon Sep 17 00:00:00 2001
+From: Ritwick Verma <verma1997@gmail.com>
+Date: Thu, 15 Oct 2026 15:33:22 -0700
+Subject: [PATCH] zmk: treat a connected USB host as power on boards without
+ VBUS detect
+
+0001 made is_usb_power_present() always return false when
+CONFIG_ZMK_USB_NO_VBUS_DETECT is set. A keyboard on USB then looked
+battery-powered: after the idle sleep timeout it called sys_poweroff(),
+cold-booted on the next keypress, and an unconfirmed MCUboot test image
+reverted to the previous slot on that boot.
+
+zmk_usb_is_powered() is derived from the USB DC connection state, which
+tracks a live host without VBUS, so use it.
+---
+ app/src/activity.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/app/src/activity.c b/app/src/activity.c
+index 2e1a14e..f128c22 100644
+--- a/app/src/activity.c
++++ b/app/src/activity.c
+@@ -31,7 +31,15 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
+ #endif
+ 
+ bool is_usb_power_present(void) {
+-#if IS_ENABLED(CONFIG_USB_DEVICE_STACK) && !IS_ENABLED(CONFIG_ZMK_USB_NO_VBUS_DETECT)
++#if IS_ENABLED(CONFIG_USB_DEVICE_STACK)
++    /* The B91 has no VBUS-detect pin, but zmk_usb_is_powered() is derived
++     * from the USB DC connection state (CONNECTED/CONFIGURED/etc.), which
++     * tracks a live host without VBUS.  Returning false here made a keyboard
++     * on USB look battery-powered: after the idle sleep timeout it called
++     * sys_poweroff(), cold-booted on the next keypress, and — for an
++     * unconfirmed MCUboot test image — that boot reverted to the baseline
++     * slot.  Treat a connected host as USB power so the keyboard never
++     * deep-sleeps while plugged in. */
+     return zmk_usb_is_powered();
+ #else
+     return false;
+-- 
+2.56.0
+
