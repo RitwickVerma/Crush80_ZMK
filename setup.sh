@@ -85,7 +85,8 @@ if ! command -v west &>/dev/null; then
     elif [[ -x "$HOME/.local/bin/west" ]]; then
         export PATH="$HOME/.local/bin:$PATH"
     elif [[ -x "$(python3 -m site --user-base)/bin/west" ]]; then
-        export PATH="$(python3 -m site --user-base)/bin:$PATH"
+        PATH="$(python3 -m site --user-base)/bin:$PATH"
+        export PATH
     fi
 fi
 
