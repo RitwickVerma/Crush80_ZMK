@@ -254,6 +254,10 @@ static void cmd_get_enabled_modes(uint8_t *rsp) {
         MODE_TYPING_HEATMAP,
         MODE_SOLID_REACTIVE,
         MODE_SPLASH,
+        /* OpenRGB only offers its per-LED "Direct" mode when the device lists
+         * it; it is tested last, so it gets sequential value 10
+         * (OPENRGB_MODE_DIRECT). */
+        MODE_OPENRGB_DIRECT,
     };
     for (size_t i = 0; i < sizeof(modes); i++) {
         rsp[1 + i] = modes[i];
