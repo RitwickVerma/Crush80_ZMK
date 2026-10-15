@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Flash a signed ZMK image to the Crush 80 through MCUboot serial recovery.
 
-Put the keyboard in bootloader mode first (Fn+Esc): it re-enumerates as
+Put the keyboard in USB recovery first (docs/flashing.md): it re-enumerates as
 "ZEPHYR MCUBOOT" (USB 2fe3:0100). The image is written straight into the boot
 slot, its hash is checked against what MCUboot reports, then the keyboard is
 reset into the new firmware.
@@ -189,10 +189,10 @@ def find_port():
         if hits:
             return os.path.realpath(hits[0])
         if not told:
-            print("Waiting for the bootloader (press Fn+Esc, or plug in the keyboard)...")
+            print("Waiting for the bootloader (put the keyboard in recovery, see docs/flashing.md)...")
             told = True
         time.sleep(0.5)
-    sys.exit("No MCUboot device found. Is the keyboard in bootloader mode (Fn+Esc)?")
+    sys.exit("No MCUboot device found. Is the keyboard in recovery mode? See docs/flashing.md.")
 
 
 def list_images(smp):

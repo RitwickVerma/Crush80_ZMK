@@ -167,7 +167,7 @@ header "=== Crush 80: Install ZMK ==="
 
 if check_usb "$ZMK_VID" "$ZMK_PID"; then
     info "Keyboard is already running ZMK (or the install bridge)."
-    info "  ZMK:    update with Fn+Esc, then: bash update.sh"
+    info "  ZMK:    update as in docs/flashing.md (recovery, then bash update.sh)"
     info "  Bridge: finish an interrupted install with:"
     info "          python3 scripts/flash_combined.py $ZMK_IMAGE"
     exit 0
@@ -217,4 +217,4 @@ ELAPSED=$((SECONDS - START_TIME))
 echo ""
 ok "Installation complete (${ELAPSED}s)"
 info "Keyboard is running ZMK firmware."
-info "Update later with Fn+Esc, then: bash update.sh"
+info "Update later: docs/flashing.md"

@@ -37,8 +37,21 @@ there; rerun the command `install_zmk.sh` prints.
 
 ## Update a keyboard that runs ZMK
 
-1. Press **Fn+Esc**. The keyboard leaves ZMK and shows up as `ZEPHYR MCUBOOT`
-   (USB `2fe3:0100`).
+1. Put the keyboard in USB recovery, where it shows up as `ZEPHYR MCUBOOT`
+   (USB `2fe3:0100`):
+
+   ```bash
+   pip install dbus-fast cbor2
+   python3 scripts/force_recovery.py      # over Bluetooth, then unplug and replug USB
+   ```
+
+   **Fn+Esc is meant to do this, but currently does not**: the keyboard reboots
+   straight back into ZMK. The likely cause is that the boot-mode flag MCUboot
+   reads (the last 16 bytes of RAM, `0x9FFF0`) does not survive the chip's reset;
+   fixing it means moving the flag in both the app and MCUboot, and rewriting
+   MCUboot is not something to do without a debugger at hand. Until then,
+   `force_recovery.py` is the way in. It needs the keyboard paired over
+   Bluetooth.
 2. Flash:
 
    ```bash
@@ -54,12 +67,12 @@ image leaves the keyboard in bootloader mode, ready for another attempt.
 
 | Situation | What to do |
 |---|---|
-| Keyboard boots but misbehaves | Fn+Esc, then flash a known-good image with `update.sh --firmware ...` |
-| Fn+Esc does not reach the bootloader | `python3 scripts/force_recovery.py` over Bluetooth (below) |
+| Keyboard boots but misbehaves | Enter recovery (below), then flash a known-good image with `update.sh --firmware ...` |
+| Keyboard needs recovery mode | `python3 scripts/force_recovery.py` over Bluetooth (below) |
 | Keyboard shows up as `ZEPHYR MCUBOOT` and nothing else | It has no valid image: flash one with `update.sh` |
 | Nothing enumerates at all | Hardware path: Telink Burning EVK on the SWS header ([hardware.md](hardware.md)) |
 
-### When Fn+Esc does not work
+### Entering recovery over Bluetooth
 
 `scripts/force_recovery.py` uses the paired Bluetooth link instead of USB. It
 erases one 4 KB sector, the header of the running image, so that MCUboot finds

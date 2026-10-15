@@ -1,7 +1,8 @@
 #!/bin/bash
 # Update a Crush 80 that already runs ZMK.
 #
-#   1. Put the keyboard in bootloader mode: Fn+Esc (it re-enumerates as MCUBOOT).
+#   1. Put the keyboard in USB recovery (it re-enumerates as MCUBOOT):
+#      python3 scripts/force_recovery.py, then unplug and replug (docs/flashing.md).
 #   2. bash update.sh            # flash dist/crush80-zmk-app.signed.bin
 #      bash update.sh --build    # build first, then flash
 #      bash update.sh --firmware path/to/image.signed.bin
@@ -20,7 +21,7 @@ while [[ $# -gt 0 ]]; do
         --build)      DO_BUILD=true; shift ;;
         --firmware)   FIRMWARE="$2"; shift 2 ;;
         --firmware=*) FIRMWARE="${1#--firmware=}"; shift ;;
-        -h|--help)    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)    sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *)            echo "Unknown option: $1" >&2; exit 1 ;;
     esac
 done

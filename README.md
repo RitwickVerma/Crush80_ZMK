@@ -36,11 +36,11 @@ opening it.
   battery indicators) and on-keyboard controls.
 - **OpenRGB**: direct per-LED control from [OpenRGB](https://openrgb.org) over a
   raw HID interface (QMK OpenRGB protocol), so the keyboard joins your desktop
-  lighting.
-- **ZMK Studio**: remap keys live from the browser over USB.
+  lighting. [Setup](docs/openrgb.md).
+- **ZMK Studio**: remap keys live from the browser over Bluetooth.
 - **One-cable install** from the stock firmware, via its own update protocol.
-- **Safe updates**: Fn+Esc drops to the MCUboot bootloader, `update.sh` flashes
-  in about 11 seconds, a bad image never boots.
+- **Safe updates**: MCUboot's USB recovery plus `update.sh` flash in about 11
+  seconds, and a bad image never boots.
 - **Mac mode** (Fn+M) and an advanced home-row-mods keymap in `keymaps/`.
 
 ## Quick start
@@ -55,7 +55,7 @@ bash build.sh --build-mcuboot     # -> dist/
 | Your keyboard runs | Do this |
 |---|---|
 | Stock Wobkey firmware | `bash install_zmk.sh` |
-| This firmware | **Fn+Esc**, then `bash update.sh` |
+| This firmware | [Update](docs/flashing.md#update-a-keyboard-that-runs-zmk) (recovery mode, then `bash update.sh`) |
 | Something broken | [Recovery](docs/flashing.md#recovery) |
 
 Full instructions, including recovery and going back to stock:
@@ -71,7 +71,7 @@ Full instructions, including recovery and going back to stock:
 
 | Fn + | Action | Fn + | Action |
 |---|---|---|---|
-| Esc | Bootloader (update mode) | 1 / 2 / 3 | Bluetooth profile |
+| Esc | Bootloader (see known issues) | 1 / 2 / 3 | Bluetooth profile |
 | F1 / F2 | Screen brightness | 4 | USB output |
 | F3 / F4 / F5 | Previous / play / next | 5 | Toggle USB / Bluetooth |
 | F6 / F7 / F8 | Mute / volume | Ins | Clear Bluetooth pairing |
@@ -97,9 +97,11 @@ Pinout, LED chain, flash map and stock-firmware notes:
 
 | | |
 |---|---|
-| Typing, USB, Bluetooth, sleep | Working, daily use |
-| Per-key RGB, OpenRGB, ZMK Studio over USB | Working |
-| Updates (Fn+Esc → `update.sh`) | Working |
+| Typing, USB, Bluetooth | Working, daily use |
+| Per-key RGB, OpenRGB (Direct mode, 154 LEDs) | Working |
+| Updates over USB (`update.sh` / `dfu.py`) | Working: 290 KB in 11 s |
+| ZMK Studio | Over Bluetooth (the USB serial port was dropped so OpenRGB sees the keyboard) |
+| Fn+Esc → bootloader | **Known issue**: reboots into the app instead. Use `scripts/force_recovery.py` ([details](docs/flashing.md#update-a-keyboard-that-runs-zmk)) |
 | 2.4 GHz dongle | Not supported: proprietary protocol, no open implementation exists |
 | Battery percentage | Reads; scaling not yet calibrated on this board |
 
