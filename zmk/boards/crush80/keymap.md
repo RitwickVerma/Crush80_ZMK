@@ -283,5 +283,5 @@ Same layout as ExtNav but with macOS shortcuts:
 | 5 | MacNav | Hold W (in Mac, example.keymap) |
 | 6 | MacExtNav | Hold Space (in MacNav) |
 | 7 | Native | Toggle (see above) |
-| 8-10 | (reserved) | Layers added in ZMK Studio |
-| 11 | Fn | Hold Fn; always the top layer |
+| 8 | Fn | Hold Fn; the top real layer |
+| 9-11 | (reserved) | Layers added in ZMK Studio; must stay last |

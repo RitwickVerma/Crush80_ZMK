@@ -6,8 +6,8 @@
  * Layer 4: Mac — swaps Alt/Win to macOS order (Ctrl Opt Cmd), toggled by Fn+M
  * Layer 5-6: MacNav / MacExtNav — dormant, like Nav / ExtNav
  * Layer 7: Native — full passthrough, toggled by Fn+ScrLk
- * Layer 8-10: reserved, for layers added in ZMK Studio
- * Layer 11: Fn — media keys, BT profiles, RGB, output/Mac toggles (top layer)
+ * Layer 8: Fn — media keys, BT profiles, RGB, output/Mac toggles (top layer)
+ * Layer 9-11: reserved, for layers added in ZMK Studio (must stay last)
  *
  * Fn shortcuts:
  *   Esc = bootloader, F1-F8 = media (brightness/transport/volume)
@@ -33,7 +33,7 @@
 #define MACNAV    5
 #define MACEXTNAV 6
 #define NATIVE    7
-#define FN        11
+#define FN        8
 
 /*
  * Key position indices for hold-trigger-key-positions (bilateral HRM).
@@ -549,21 +549,8 @@
 			>;
 		};
 
-		/* Layers 8-10: empty slots that ZMK Studio can turn into new layers. */
-		studio_layer_1 {
-			status = "reserved";
-		};
-
-		studio_layer_2 {
-			status = "reserved";
-		};
-
-		studio_layer_3 {
-			status = "reserved";
-		};
-
 		/*
-		 * Layer 11: Fn — must stay the LAST (highest) layer. ZMK resolves a
+		 * Layer 8: Fn — must stay the highest real layer. ZMK resolves a
 		 * key from the highest active layer down, so any layer above Fn that
 		 * binds a key (Mac, Native) would swallow that Fn shortcut, including
 		 * Fn+M and Fn+ScrLk, the only ways back out of those modes.
@@ -599,6 +586,22 @@
 				&trans        &trans        &trans
 				&trans        &rgb RGB_BRD &trans
 			>;
+		};
+
+		/* Layers 9-11: empty slots that ZMK Studio can turn into new layers.
+		 * They must come after every real layer: ZMK numbers the enabled
+		 * layers first, so a real layer placed after a reserved one is never
+		 * looked up (this once killed Fn entirely). */
+		studio_layer_1 {
+			status = "reserved";
+		};
+
+		studio_layer_2 {
+			status = "reserved";
+		};
+
+		studio_layer_3 {
+			status = "reserved";
 		};
 	};
 };
