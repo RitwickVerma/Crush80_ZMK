@@ -34,7 +34,7 @@ done
 # Priority:
 #   1. CRUSH80_KEYMAP env var (explicit path to a .keymap file)
 #   2. Dotfiles directory (~/.config/DOTFILES/keybindings/crush80-zmk/crush80.keymap)
-#   3. config/crush80.keymap (the board keymap; also what keymap-editor edits)
+#   3. config/crush80.keymap (the board keymap)
 # The chosen file is copied into the workspace only; the repo copy is never
 # overwritten (copying over it once destroyed uncommitted keymap work).
 DOTFILES_ZMK="${CRUSH80_ZMK_CONFIG:-$HOME/.config/DOTFILES/keybindings/crush80-zmk}"
