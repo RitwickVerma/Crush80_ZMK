@@ -4,9 +4,9 @@
 #include "color.h"
 #include "led_map.h"     /* rrgb_led_for_position */
 
-#define CAPS_POS         50   /* keymap position of CapsLock (home row) */
+#define CAPS_POS         51   /* keymap position of CapsLock (home row) */
 #define BAT_SHOW_FRAMES  150  /* ~3s at the engine's 50 fps (RRGB_FPS) */
-#define BAT_SEG_FIRST    17   /* number row keys 1..0 = positions 17..26 */
+#define BAT_SEG_FIRST    18   /* number row keys 1..0 = positions 18..27 */
 #define BAT_SEG_COUNT    10
 
 /* Fn-active keymap positions (non-&trans on layer 1). KEYMAP-COUPLED:

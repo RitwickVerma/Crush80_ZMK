@@ -45,35 +45,35 @@
 
 /*
  * Key position indices for hold-trigger-key-positions (bilateral HRM).
- * Derived from the matrix transform in crush80.dts (86 total positions, 0-indexed).
+ * Derived from the matrix transform in crush80.dts (88 positions, 0-indexed).
  *
- * Row 0 (F-row):     0-15    (ESC F1-F12 PrtSc ScrLk Pause)
- * Row 1 (numbers):   16-32   (` 1-0 - = Bspc | Ins Home PgUp)
- * Row 2 (QWERTY):    33-49   (Tab Q-P [ ] \ | Del End PgDn)
- * Row 3 (home):      50-62   (Caps A-L ; ' Enter)
- * Row 4 (shift):     63-76   (LSft Z-/ RSft Up)
- * Row 5 (bottom):    77-86   (LCtl LGui LAlt Spc RAlt Fn RCtl | Left Down Right)
+ * Row 0 (F-row):     0-16    (ESC F1-F12 F13 PrtSc ScrLk Pause)
+ * Row 1 (numbers):   17-33   (` 1-0 - = Bspc | Ins Home PgUp)
+ * Row 2 (QWERTY):    34-50   (Tab Q-P [ ] \ | Del End PgDn)
+ * Row 3 (home):      51-63   (Caps A-L ; ' Enter)
+ * Row 4 (shift):     64-76   (LSft Z-/ RSft Up)
+ * Row 5 (bottom):    77-87   (LCtl LGui LAlt Spc RAlt Fn RGui RCtl | Left Down Right)
  */
 
-/* Left-hand keys (columns 0-6 of main block) */
+/* Left hand: up to the T / G / B / 5 / F5 column */
 #define KEYS_L \
-    0  1  2  3  4  5  6  7 \
-    16 17 18 19 20 21 22 23 \
-    33 34 35 36 37 38 39 40 \
-    50 51 52 53 54 55 56 \
-    63 64 65 66 67 68 69 \
-    77 78 79
+    0  1  2  3  4  5 \
+    17 18 19 20 21 22 \
+    34 35 36 37 38 39 \
+    51 52 53 54 55 56 \
+    64 65 66 67 68 69 \
+    77 78
 
-/* Right-hand keys (columns 7-13 of main block + nav cluster + arrows) */
+/* Right hand: from the Y / H / N / 6 / F6 column, plus nav cluster and arrows */
 #define KEYS_R \
-    8  9  10 11 12 13 14 15 \
-    24 25 26 27 28 29 30 31 32 \
-    41 42 43 44 45 46 47 48 49 \
-    57 58 59 60 61 62 \
+    6  7  8  9  10 11 12 13 14 15 16 \
+    23 24 25 26 27 28 29 30 31 32 33 \
+    40 41 42 43 44 45 46 47 48 49 50 \
+    57 58 59 60 61 62 63 \
     70 71 72 73 74 75 76 \
-    81 82 83 84 85 86
+    82 83 84 85 86 87
 
-/* Thumb keys (Space + surrounding modifiers) */
+/* Thumb keys: LAlt position, Space, RAlt position */
 #define THUMBS 79 80 81
 
 / {
@@ -260,7 +260,7 @@
 				/* Row 0: F-row (media keys, ScrLk=toggle native) */
 				&kp ESC       &kp C_BRI_DN  &kp C_BRI_UP  &kp F3        &kp F4
 				&kp F5        &kp F6        &kp C_PREV    &kp C_PP
-				&kp C_NEXT    &kp C_MUTE    &kp C_VOL_DN  &kp C_VOL_UP
+				&kp C_NEXT    &kp C_MUTE    &kp C_VOL_DN  &kp C_VOL_UP  &kp F13
 				&kp PSCRN     &tog NATIVE   &kp PAUSE_BREAK
 				/* Row 1: number row + nav cluster */
 				&kp GRAVE     &kp N1        &kp N2        &kp N3        &kp N4
@@ -282,7 +282,7 @@
 				&kp DOT       &kp FSLH                    &kp RSHFT     &kp UP
 				/* Row 5: bottom row (LAlt=Shift, RAlt=Tab) */
 				&kp LCTRL     &kp LGUI      &kp LSHFT                   &kp SPACE
-				&kp TAB       &mo FN        &kp RCTRL
+				&kp TAB       &mo FN  &kp RGUI        &kp RCTRL
 				&kp LEFT      &kp DOWN      &kp RIGHT
 			>;
 		};
@@ -299,7 +299,7 @@
 				/* Row 0: blocked */
 				&none         &none         &none         &none         &none
 				&none         &none         &none         &none
-				&none         &none         &none         &none
+				&none         &none         &none         &none  &trans
 				&none         &none         &none
 				/* Row 1: blocked */
 				&none         &none         &none         &none         &none
@@ -321,7 +321,7 @@
 				&sel_w        &none                       &kp RSHFT     &trans
 				/* Row 5: pass mods through, Space=ExtNav */
 				&kp LCTRL     &kp LGUI      &kp LALT                    &mo EXTNAV
-				&trans        &trans        &kp RCTRL
+				&trans        &trans  &trans        &kp RCTRL
 				&trans        &trans        &trans
 			>;
 		};
@@ -337,7 +337,7 @@
 				/* Row 0: blocked */
 				&none         &none         &none         &none         &none
 				&none         &none         &none         &none
-				&none         &none         &none         &none
+				&none         &none         &none         &none  &trans
 				&none         &none         &none
 				/* Row 1: blocked */
 				&none         &none         &none         &none         &none
@@ -359,7 +359,7 @@
 				&sel_w        &none                       &kp RSHFT     &trans
 				/* Row 5: mods pass through, Space is held (layer active) */
 				&kp LCTRL     &kp LGUI      &kp LALT                    &none
-				&trans        &trans        &kp RCTRL
+				&trans        &trans  &trans        &kp RCTRL
 				&trans        &trans        &trans
 			>;
 		};
@@ -376,7 +376,7 @@
 				/* Row 0: pass through */
 				&trans        &trans        &trans        &trans        &trans
 				&trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans
+				&trans        &trans        &trans        &trans  &trans
 				&trans        &trans        &trans
 				/* Row 1: number row symbols (` 1 2 3 $ % ^ & * ( ) . = _) */
 				&kp GRAVE     &kp N1        &kp N2        &kp N3        &kp LS(N4)
@@ -398,7 +398,7 @@
 				&none         &none                       &kp RSHFT     &trans
 				/* Row 5: pass mods, Space=Shift, right thumb=0,dot */
 				&kp LCTRL     &kp LGUI      &trans                      &kp LSHFT
-				&kp N0        &kp DOT       &kp RCTRL
+				&kp N0        &kp DOT  &trans       &kp RCTRL
 				&trans        &trans        &trans
 			>;
 		};
@@ -414,7 +414,7 @@
 				/* Row 0 */
 				&trans        &trans        &trans        &trans        &trans
 				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans        &trans
+				&trans        &trans        &trans  &trans        &trans        &trans
 				&trans
 				/* Row 1 */
 				&trans        &trans        &trans        &trans        &trans
@@ -436,7 +436,7 @@
 				&trans        &trans        &trans
 				/* Row 5 */
 				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans        &trans
+				&trans  &trans        &trans        &trans        &trans        &trans
 			>;
 		};
 
@@ -452,7 +452,7 @@
 				/* Row 0: blocked */
 				&none         &none         &none         &none         &none
 				&none         &none         &none         &none
-				&none         &none         &none         &none
+				&none         &none         &none         &none  &trans
 				&none         &none         &none
 				/* Row 1: blocked */
 				&none         &none         &none         &none         &none
@@ -474,7 +474,7 @@
 				&mac_sel_w    &none                       &kp RSHFT     &trans
 				/* Row 5: pass mods through, Space=MacExtNav */
 				&kp LCTRL     &kp LGUI      &kp LALT                    &mo MACEXTNAV
-				&trans        &trans        &kp RCTRL
+				&trans        &trans  &trans        &kp RCTRL
 				&trans        &trans        &trans
 			>;
 		};
@@ -491,7 +491,7 @@
 				/* Row 0: blocked */
 				&none         &none         &none         &none         &none
 				&none         &none         &none         &none
-				&none         &none         &none         &none
+				&none         &none         &none         &none  &trans
 				&none         &none         &none
 				/* Row 1: blocked */
 				&none         &none         &none         &none         &none
@@ -513,7 +513,7 @@
 				&mac_sel_w    &none                       &kp RSHFT     &trans
 				/* Row 5: mods pass through, Space is held (layer active) */
 				&kp LCTRL     &kp LGUI      &kp LALT                    &none
-				&trans        &trans        &kp RCTRL
+				&trans        &trans  &trans        &kp RCTRL
 				&trans        &trans        &trans
 			>;
 		};
@@ -529,7 +529,7 @@
 				/* Row 0: standard F-row, ScrLk position toggles back to base */
 				&kp ESC       &kp F1        &kp F2        &kp F3        &kp F4
 				&kp F5        &kp F6        &kp F7        &kp F8
-				&kp F9        &kp F10       &kp F11       &kp F12
+				&kp F9        &kp F10       &kp F11       &kp F12  &kp F13
 				&kp PSCRN     &tog NATIVE   &kp PAUSE_BREAK
 				/* Row 1: standard number row */
 				&kp GRAVE     &kp N1        &kp N2        &kp N3        &kp N4
@@ -551,7 +551,7 @@
 				&kp DOT       &kp FSLH                    &kp RSHFT     &kp UP
 				/* Row 5: standard bottom row */
 				&kp LCTRL     &kp LGUI      &kp LALT                    &kp SPACE
-				&kp RALT      &mo FN        &kp RCTRL
+				&kp RALT      &mo FN  &kp RGUI        &kp RCTRL
 				&kp LEFT      &kp DOWN      &kp RIGHT
 			>;
 		};
@@ -569,7 +569,7 @@
 				/* Row 0: Fn+Esc=bootloader, actual F1-F12, Fn+Pause=Studio unlock */
 				&bootloader   &kp F1        &kp F2        &kp F3        &kp F4
 				&kp F5        &kp F6        &kp F7        &kp F8
-				&kp F9        &kp F10       &kp F11       &kp F12
+				&kp F9        &kp F10       &kp F11       &kp F12  &trans
 				&trans        &trans        &studio_unlock
 				/* Row 1: Fn+Bspc=RGB toggle, Fn+Ins=BT clear */
 				&trans        &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &out OUT_USB
@@ -591,7 +591,7 @@
 			&trans        &trans                      &trans        &rgb RGB_BRI
 				/* Row 5: Fn+Down=RGB bright down */
 				&trans        &trans        &trans                      &trans
-				&trans        &trans        &trans
+				&trans        &trans  &trans        &trans
 				&trans        &rgb RGB_BRD &trans
 			>;
 		};

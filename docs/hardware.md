@@ -13,7 +13,7 @@ hardware.
 |---|---|
 | MCU | **Telink TLSR9511** (B91 family): RISC-V RV32IMAC + Andes V5 extensions, 48 MHz, 1 MB flash, 128 KB ILM + 128 KB DLM SRAM |
 | Crystal | 24 MHz |
-| Matrix | 6 rows × 16 columns, col2row, 86 keys (ANSI) |
+| Matrix | 6 rows × 16 columns, col2row, 88 keys (ANSI; F13 at matrix (4,12)) |
 | LEDs | 154 addressable RGB LEDs (SK6812 MINI-E style), one daisy chain |
 | Battery | Li-ion; voltage read on PD1 through a 1/2 divider (as on the Rainy 75; not yet calibrated on this board) |
 | Radios | USB-C (full speed), Bluetooth LE 5, proprietary 2.4 GHz (dongle) |
