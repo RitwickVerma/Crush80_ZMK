@@ -6,7 +6,10 @@
 
 /* Neutral state — set by the adapter from the ZMK event thread. */
 void rrgb_overlay_set_caps(bool on);
-void rrgb_overlay_set_fn(bool active);
+/* Fn held: light the keymap positions set in fn_key_bitmap (bit p = position
+ * p, RRGB_FN_BITMAP_BYTES long; copied, ignored when inactive). */
+#define RRGB_FN_BITMAP_BYTES 12   /* 96 positions >= the 88 keys */
+void rrgb_overlay_set_fn(bool active, const uint8_t *fn_key_bitmap);
 void rrgb_overlay_set_battery(uint8_t pct);
 void rrgb_overlay_battery_show(uint32_t tick);   /* start the ~3s gauge window */
 

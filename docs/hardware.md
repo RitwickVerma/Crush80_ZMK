@@ -53,7 +53,11 @@ Each LED footprint has four pads labelled **DI / DO / V / G**: data in, data
 out, supply, ground, i.e. a WS2812-style daisy chain rather than an LED-matrix
 driver. The chain is driven from **PB7** (the PSPI MOSI pin) with SPI-encoded
 WS2812 timing and DMA, GRB colour order; **PC2** switches LED power through a
-MOSFET. One LED sits under each key; the rest light the side bar and logo.
+MOSFET. The first 92 LEDs sit under the keys, row by row, left to right; the
+other 62 light the side bar and logo. Caps Lock and Enter have two LEDs each
+and Space three, so 88 keys use 92 LEDs. The key-to-LED order comes from the
+stock firmware's switch-to-LED table (v1.04 image, inner offset `0x1B90C`) and
+is implemented in `zmk/src/rainy_rgb/led_map.c`.
 
 > Early analysis of the stock firmware concluded the LEDs were driven by two
 > AW20216S matrix controllers on HSPI (PE0-PE2). The PCB disproved that: those

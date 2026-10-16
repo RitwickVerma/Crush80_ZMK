@@ -14,4 +14,13 @@ const struct led_xy *rrgb_xy_for_position(uint32_t position);
 /* keymap position -> LED index, or -1 if out of range. */
 int rrgb_led_for_position(uint32_t position);
 
+/* All LEDs under the key at a keymap position (Caps Lock, Enter and Space have
+ * more than one). Returns how many were written to out (0 if out of range). */
+#define RRGB_MAX_LEDS_PER_KEY 3
+uint8_t rrgb_leds_for_position(uint32_t position, uint8_t out[RRGB_MAX_LEDS_PER_KEY]);
+
+/* Number of LEDs under keys (0..RRGB_KEY_LED_COUNT-1); the rest are side bar
+ * and logo. */
+#define RRGB_KEY_LED_COUNT 92
+
 #endif
