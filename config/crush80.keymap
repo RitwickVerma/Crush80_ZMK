@@ -1,19 +1,26 @@
 /*
- * Wobkey Crush 80 — ZMK keymap (standard layout)
+ * Wobkey Crush 80 — ZMK keymap
  *
- * Layer 0: Base — standard 80%: F1-F12, QWERTY, arrow cluster
- * Layer 1-3: Nav / ExtNav / Sym — dormant (no active trigger; re-wire if wanted)
- * Layer 4: Mac — swaps Alt/Win to macOS order (Ctrl Opt Cmd), toggled by Fn+M
- * Layer 5-6: MacNav / MacExtNav — dormant, like Nav / ExtNav
- * Layer 7: Native — full passthrough, toggled by Fn+ScrLk
- * Layer 8: Fn — media keys, BT profiles, RGB, output/Mac toggles (top layer)
- * Layer 9-11: reserved, for layers added in ZMK Studio (must stay last)
+ * Base is a plain 80% layout, so everything types and shortcuts exactly as on any
+ * keyboard. Extra function sits behind three held keys, none of which changes
+ * what the key does when merely tapped:
  *
- * Fn shortcuts:
- *   Esc = bootloader, F1-F8 = media (brightness/transport/volume)
- *   1/2/3 = BT profile, 4 = USB output, 5 = toggle output
- *   Bspc = RGB on/off, Ins = BT clear, \ = RGB effect
- *   M = Mac toggle, Up/Down = RGB brightness
+ *   Caps (hold)        Nav: IJKL arrows, Home/End, word jumps, delete, clipboard
+ *   Caps + Space       NumSym: numpad on the right hand, symbols on the left
+ *   Fn (hold)          Fn: media, Bluetooth, RGB, Mac / Native toggles
+ *
+ * Layers (the number is what VIA and ZMK Studio show)
+ *   0 Base    1 Nav     2,3 spare (empty, yours to use)
+ *   4 Mac     modifiers in Mac order (Ctrl Opt Cmd); Caps opens MacNav, not Nav
+ *   5 MacNav  Nav with Cmd / Option instead of Ctrl
+ *   6 NumSym  7 Native  (every key plain, ignores Mac mode)
+ *   8 Fn      must stay the highest real layer, see below
+ *   9-11      reserved for layers made in ZMK Studio (must stay last)
+ *
+ * Fn layer: Esc bootloader, F12 Studio unlock, 1-7 Bluetooth profiles / USB /
+ * output toggle, Bspc RGB on-off, \ and Enter next effect, [ ] hue, ; ' speed,
+ * Up / Down brightness, B battery, Del Bluetooth clear, M Mac toggle, N Native
+ * toggle, Ins..PgDn and PrtSc..Pause media.
  */
 
 /* Build every ZMK behavior, not only the ones this file references, so that
@@ -34,120 +41,35 @@
 /* Layer indices: the order of the layer nodes in the keymap below. */
 #define BASE      0
 #define NAV       1
-#define EXTNAV    2
-#define SYM       3
 #define MAC       4
 #define MACNAV    5
-#define MACEXTNAV 6
+#define NUMSYM    6
 #define NATIVE    7
 #define FN        8
-
-/*
- * Key position indices for hold-trigger-key-positions (bilateral HRM).
- * Derived from the matrix transform in crush80.dts (88 positions, 0-indexed).
- *
- * Row 0 (F-row):     0-16    (ESC F1-F12 F13 PrtSc ScrLk Pause)
- * Row 1 (numbers):   17-33   (` 1-0 - = Bspc | Ins Home PgUp)
- * Row 2 (QWERTY):    34-50   (Tab Q-P [ ] \ | Del End PgDn)
- * Row 3 (home):      51-63   (Caps A-L ; ' Enter)
- * Row 4 (shift):     64-76   (LSft Z-/ RSft Up)
- * Row 5 (bottom):    77-87   (LCtl LGui LAlt Spc RAlt Fn RGui RCtl | Left Down Right)
- */
-
-/* Left hand: up to the T / G / B / 5 / F5 column */
-#define KEYS_L \
-    0  1  2  3  4  5 \
-    17 18 19 20 21 22 \
-    34 35 36 37 38 39 \
-    51 52 53 54 55 56 \
-    64 65 66 67 68 69 \
-    77 78
-
-/* Right hand: from the Y / H / N / 6 / F6 column, plus nav cluster and arrows */
-#define KEYS_R \
-    6  7  8  9  10 11 12 13 14 15 16 \
-    23 24 25 26 27 28 29 30 31 32 33 \
-    40 41 42 43 44 45 46 47 48 49 50 \
-    57 58 59 60 61 62 63 \
-    70 71 72 73 74 75 76 \
-    82 83 84 85 86 87
-
-/* Thumb keys: LAlt position, Space, RAlt position */
-#define THUMBS 79 80 81
 
 / {
 	behaviors {
 		/*
-		 * Home Row Mods — left hand.
-		 * Only triggers hold when a right-hand key is pressed.
-		 */
-		hml: home_row_mod_left {
-			compatible = "zmk,behavior-hold-tap";
-			#binding-cells = <2>;
-			flavor = "balanced";
-			tapping-term-ms = <280>;
-			quick-tap-ms = <175>;
-			require-prior-idle-ms = <150>;
-			bindings = <&kp>, <&kp>;
-			hold-trigger-key-positions = <KEYS_R THUMBS>;
-			hold-trigger-on-release;
-		};
-
-		/*
-		 * Home Row Mods — right hand.
-		 * Only triggers hold when a left-hand key is pressed.
-		 */
-		hmr: home_row_mod_right {
-			compatible = "zmk,behavior-hold-tap";
-			#binding-cells = <2>;
-			flavor = "balanced";
-			tapping-term-ms = <280>;
-			quick-tap-ms = <175>;
-			require-prior-idle-ms = <150>;
-			bindings = <&kp>, <&kp>;
-			hold-trigger-key-positions = <KEYS_L THUMBS>;
-			hold-trigger-on-release;
-		};
-
-		/*
-		 * Layer-tap for Nav (hold W).
-		 * Uses balanced flavor with same timings as HRM.
+		 * Caps: tap = Caps Lock, hold = navigation. "balanced" turns into a hold as
+		 * soon as another key is pressed and released while Caps is down, so
+		 * Caps+I works at once, while tapping Caps then typing still just types.
 		 */
 		lt_nav: layer_tap_nav {
 			compatible = "zmk,behavior-hold-tap";
 			#binding-cells = <2>;
 			flavor = "balanced";
-			tapping-term-ms = <280>;
-			quick-tap-ms = <175>;
-			require-prior-idle-ms = <150>;
+			tapping-term-ms = <200>;
+			quick-tap-ms = <150>;
 			bindings = <&mo>, <&kp>;
 		};
 
-		/*
-		 * Layer-tap for Sym (hold Caps or Apostrophe).
-		 * Caps: tap=CAPS, hold=Sym. Apostrophe: tap=SQT, hold=Sym.
-		 */
-		lt_sym: layer_tap_sym {
+		/* The same for Mac mode, opening MacNav. */
+		lt_macnav: layer_tap_macnav {
 			compatible = "zmk,behavior-hold-tap";
 			#binding-cells = <2>;
 			flavor = "balanced";
-			tapping-term-ms = <280>;
-			quick-tap-ms = <175>;
-			require-prior-idle-ms = <150>;
-			bindings = <&mo>, <&kp>;
-		};
-
-		/*
-		 * Layer-tap for MacNav (hold W in Mac mode).
-		 * Same timings as lt_nav but activates MACNAV.
-		 */
-		lt_mac_nav: layer_tap_mac_nav {
-			compatible = "zmk,behavior-hold-tap";
-			#binding-cells = <2>;
-			flavor = "balanced";
-			tapping-term-ms = <280>;
-			quick-tap-ms = <175>;
-			require-prior-idle-ms = <150>;
+			tapping-term-ms = <200>;
+			quick-tap-ms = <150>;
 			bindings = <&mo>, <&kp>;
 		};
 	};
@@ -237,361 +159,146 @@
 		compatible = "zmk,keymap";
 
 		/*
-		 * Layer 0: Base
-		 *
-		 * ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
-		 * │ESC│F1 │F2 │F3 │F4 │F5 │F6 │F7 │F8 │F9 │F10│F11│F12│PSc│SLk│Pse│
-		 * ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
-		 * │ ` │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │ 9 │ 0 │ - │ = │Bsp│Ins│Hom│PUp│
-		 * ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
-		 * │Tab│ Q │ W │ E │ R │ T │ Y │ U │ I │ O │ P │ [ │ ] │ \ │Del│End│PDn│
-		 * ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
-		 * │Cap│ A │ S │ D │ F │ G │ H │ J │ K │ L │ ; │ ' │Ent│
-		 * ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───┼───────┼───┤
-		 * │LSf│ Z │ X │ C │ V │ B │ N │ M │ , │ . │ / │RSf│ ↑ │
-		 * ├───┼───┼───┼───────────────────────────┼───┼───┼───┼───┼───┼───┤
-		 * │LCt│Win│Alt│      Space       │Alt│ Fn│RCt│ ← │ ↓ │ → │
-		 * └───┴───┴───┴───────────────────┴───┴───┴───┴───┴───┴───┘
+		 * Layer 0: Base. Plain 80%; only Caps differs (tap = Caps Lock, hold = Nav).
 		 */
 		default_layer {
 			display-name = "Base";
 			bindings = <
-				/* Row 0: F-row (standard F1-F12) */
-				&kp ESC       &kp F1        &kp F2        &kp F3        &kp F4
-				&kp F5        &kp F6        &kp F7        &kp F8
-				&kp F9        &kp F10       &kp F11       &kp F12  &kp F13
-				&kp PSCRN     &kp SCROLLLOCK &kp PAUSE_BREAK
-				/* Row 1: number row + nav cluster */
-				&kp GRAVE     &kp N1        &kp N2        &kp N3        &kp N4
-				&kp N5        &kp N6        &kp N7        &kp N8        &kp N9
-				&kp N0        &kp MINUS     &kp EQUAL     &kp BSPC
-				&kp INS       &kp HOME      &kp PG_UP
-			/* Row 2: QWERTY + nav cluster */
-			&kp TAB       &kp Q         &kp W         &kp E         &kp R
-				&kp T         &kp Y         &kp U         &kp I         &kp O
-				&kp P         &kp LBKT      &kp RBKT      &kp BSLH
-				&kp DEL       &kp END       &kp PG_DN
-			/* Row 3: home row (plain keys) */
-			&kp CAPS      &kp A         &kp S         &kp D         &kp F
-			&kp G         &kp H         &kp J         &kp K         &kp L
-			&kp SEMI      &kp SQT                     &kp RET
-				/* Row 4: shift row */
-				&kp LSHFT                   &kp Z         &kp X         &kp C
-				&kp V         &kp B         &kp N         &kp M         &kp COMMA
-				&kp DOT       &kp FSLH                    &kp RSHFT     &kp UP
-			/* Row 5: bottom row */
-			&kp LCTRL     &kp LGUI      &kp LALT                    &kp SPACE
-			&kp RALT      &mo FN  &kp RGUI        &kp RCTRL
-				&kp LEFT      &kp DOWN      &kp RIGHT
+				&kp ESC           &kp F1            &kp F2            &kp F3            &kp F4            &kp F5            &kp F6            &kp F7            &kp F8            &kp F9            &kp F10           &kp F11           &kp F12           &kp F13           &kp PSCRN         &kp SLCK          &kp PAUSE_BREAK
+				&kp GRAVE         &kp N1            &kp N2            &kp N3            &kp N4            &kp N5            &kp N6            &kp N7            &kp N8            &kp N9            &kp N0            &kp MINUS         &kp EQUAL         &kp BSPC          &kp INS           &kp HOME          &kp PG_UP
+				&kp TAB           &kp Q             &kp W             &kp E             &kp R             &kp T             &kp Y             &kp U             &kp I             &kp O             &kp P             &kp LBKT          &kp RBKT          &kp BSLH          &kp DEL           &kp END           &kp PG_DN
+				&lt_nav NAV CAPS  &kp A             &kp S             &kp D             &kp F             &kp G             &kp H             &kp J             &kp K             &kp L             &kp SEMI          &kp SQT           &kp RET
+				&kp LSHFT         &kp Z             &kp X             &kp C             &kp V             &kp B             &kp N             &kp M             &kp COMMA         &kp DOT           &kp FSLH          &kp RSHFT         &kp UP
+				&kp LCTRL         &kp LGUI          &kp LALT          &kp SPACE         &kp RALT          &mo FN            &kp RGUI          &kp RCTRL         &kp LEFT          &kp DOWN          &kp RIGHT
 			>;
 		};
 
 		/*
-		 * Layer 1: Nav (hold W)
-		 * Right hand: IJKL arrows, U=Bspc, O=Del, ;=Shift+Enter
-		 * Left hand: editing (Undo/Cut/Copy/Paste), E=Home, R=End, T/A/S=Shift
-		 * G = Caps Word (auto-deactivates on space/punctuation)
+		 * Layer 1: Nav (hold Caps).
+		 * Right hand: I J K L cursor, H / ; Home / End, U / O word left / right,
+		 * Y / N page up / down, M / , back / forward.
+		 * Left hand: W Bspc, E Del, R / T delete word, A all, S save, D line, F word,
+		 * G Caps Word, Z X C V undo cut copy paste, B redo. Space opens NumSym.
 		 */
 		nav_layer {
 			display-name = "Nav";
 			bindings = <
-				/* Row 0: blocked */
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none
-				&none         &none         &none         &none  &trans
-				&none         &none         &none
-				/* Row 1: blocked */
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none
-				&none         &none         &none
-				/* Row 2: Tab, Esc, (W held), Home, End, Shift, _, Bspc, Up, Del */
-				&kp TAB       &kp ESC       &trans        &kp HOME      &kp END
-				&kp LSHFT     &none         &kp BSPC      &kp UP        &kp DEL
-				&none         &none         &none         &none
-				&none         &none         &none
-				/* Row 3: _, Shift, Shift, _, _, CapsWord, _, Left, Down, Right, Shift+Enter */
-				&none         &kp LSHFT     &kp LSHFT     &none         &none
-				&caps_word    &none         &kp LEFT      &kp DOWN      &kp RIGHT
-				&kp LS(RET)   &none                       &kp RET
-				/* Row 4: Shift, Undo, Cut, Copy, Paste, _, _, _, SelLine, SelWord */
-				&kp LSHFT                   &kp LC(Z)     &kp LC(X)     &kp LC(C)
-				&kp LC(V)     &none         &none         &none         &sel_l
-				&sel_w        &none                       &kp RSHFT     &trans
-				/* Row 5: pass mods through, Space=ExtNav */
-				&kp LCTRL     &kp LGUI      &kp LALT                    &mo EXTNAV
-				&trans        &trans  &trans        &kp RCTRL
-				&trans        &trans        &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &kp BSPC          &kp DEL           &kp LC(BSPC)      &kp LC(DEL)       &kp PG_UP         &kp LC(LEFT)      &kp UP            &kp LC(RIGHT)     &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &kp LC(A)         &kp LC(S)         &sel_l            &sel_w            &caps_word        &kp HOME          &kp LEFT          &kp DOWN          &kp RIGHT         &kp END           &trans            &trans
+				&trans            &kp LC(Z)         &kp LC(X)         &kp LC(C)         &kp LC(V)         &kp LC(Y)         &kp PG_DN         &kp LA(LEFT)      &kp LA(RIGHT)     &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &mo NUMSYM        &trans            &trans            &trans            &trans            &trans            &trans            &trans
 			>;
 		};
 
 		/*
-		 * Layer 2: ExtNav (hold Space while in Nav)
-		 * Like Nav but word-level: J/L=word jump, I=PgUp, K=PgDn, U/O=word delete
-		 * Z=Redo (Ctrl+Shift+Z on Linux/Win)
+		 * Layer 2: spare. Empty on purpose.
 		 */
-		extnav_layer {
-			display-name = "ExtNav";
+		spare_layer_1 {
+			display-name = "Spare 1";
 			bindings = <
-				/* Row 0: blocked */
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none
-				&none         &none         &none         &none  &trans
-				&none         &none         &none
-				/* Row 1: blocked */
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none
-				&none         &none         &none
-				/* Row 2: Tab, Esc, _, Home, End, Shift, _, WordBspc, PgUp, WordDel */
-				&kp TAB       &kp ESC       &trans        &kp HOME      &kp END
-				&kp LSHFT     &none         &kp LC(BSPC)  &kp PG_UP     &kp LC(DEL)
-				&none         &none         &none         &none
-				&none         &none         &none
-				/* Row 3: _, Shift, Shift, _, _, _, _, WordLeft, PgDn, WordRight, Enter */
-				&none         &kp LSHFT     &kp LSHFT     &none         &none
-				&none         &none         &kp LC(LEFT)  &kp PG_DN     &kp LC(RIGHT)
-				&kp RET       &none                       &kp RET
-				/* Row 4: Shift, Redo, Cut, Copy, Paste, _, _, _, SelLine, SelWord */
-				&kp LSHFT                   &kp LC(LS(Z)) &kp LC(X)     &kp LC(C)
-				&kp LC(V)     &none         &none         &none         &sel_l
-				&sel_w        &none                       &kp RSHFT     &trans
-				/* Row 5: mods pass through, Space is held (layer active) */
-				&kp LCTRL     &kp LGUI      &kp LALT                    &none
-				&trans        &trans  &trans        &kp RCTRL
-				&trans        &trans        &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
 			>;
 		};
 
 		/*
-		 * Layer 3: Sym (hold Caps or Apostrophe)
-		 * Left: numbers (456 top, 789 home, 0. bottom) + coding macros
-		 * Right: brackets, punctuation, operators
-		 * Space = Shift (for capitals without releasing layer key)
+		 * Layer 3: spare. Empty on purpose.
 		 */
-		sym_layer {
-			display-name = "Sym";
+		spare_layer_2 {
+			display-name = "Spare 2";
 			bindings = <
-				/* Row 0: pass through */
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans  &trans
-				&trans        &trans        &trans
-				/* Row 1: number row symbols (` 1 2 3 $ % ^ & * ( ) . = _) */
-				&kp GRAVE     &kp N1        &kp N2        &kp N3        &kp LS(N4)
-				&kp LS(N5)    &kp LS(N6)    &kp LS(N7)    &kp LS(N8)    &kp LS(N9)
-				&kp LS(N0)    &kp DOT       &trans        &trans
-				&trans        &trans        &trans
-				/* Row 2: left=4,5,6,->,lambda | right=() =>, (, ), [, ] */
-				&kp SPACE     &kp N4        &kp N5        &kp N6        &c_arw
-				&lambda       &fn_arw       &kp LS(N9)    &kp LS(N0)    &kp LBKT
-				&kp RBKT      &none         &none         &none
-				&trans        &trans        &trans
-				/* Row 3: left=_,7,8,9,-,+ | right==,comma,dot,?,',bspc */
-				&none         &kp N7        &kp N8        &kp N9        &kp MINUS
-				&kp LS(EQUAL) &kp EQUAL     &kp COMMA     &kp DOT       &kp LS(FSLH)
-				&kp SQT       &kp BSPC                    &trans
-				/* Row 4: Shift, Undo, 0, dot, \, |, /, _, _, _, _ */
-				&kp LSHFT                   &kp LC(Z)     &kp N0        &kp DOT
-				&kp BSLH      &kp LS(BSLH)  &kp FSLH      &none         &none
-				&none         &none                       &kp RSHFT     &trans
-				/* Row 5: pass mods, Space=Shift, right thumb=0,dot */
-				&kp LCTRL     &kp LGUI      &trans                      &kp LSHFT
-				&kp N0        &kp DOT  &trans       &kp RCTRL
-				&trans        &trans        &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
 			>;
 		};
 
 		/*
-		 * Layer 4: Mac (toggle Fn+M)
-		 * Transparent except the modifiers, which move to macOS order:
-		 *   Ctrl Win Alt _ Alt  ->  Ctrl Opt Cmd _ Cmd
-		 * (macOS reads Win as Cmd and Alt as Option.)
+		 * Layer 4: Mac (Fn+M). Only the modifiers move: Win -> Option, Alt -> Cmd, and
+		 * the right-hand pair the same way. Caps opens MacNav.
 		 */
 		mac_layer {
 			display-name = "Mac";
 			bindings = <
-				/* Row 0 */
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans  &trans
-				&trans        &trans        &trans
-				/* Row 1 */
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans
-				&trans        &trans        &trans
-				/* Row 2 */
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans
-				&trans        &trans        &trans
-				/* Row 3 */
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans                      &trans
-				/* Row 4 */
-				&trans                      &trans        &trans        &trans
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans                      &trans        &trans
-				/* Row 5: Win -> Option, Alt -> Cmd, right Alt -> right Cmd */
-				&trans        &kp LALT      &kp LGUI                    &trans
-				&kp RGUI      &trans  &kp RALT        &trans
-				&trans        &trans        &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&lt_macnav MACNAV CAPS  &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &kp LALT          &kp LGUI          &trans            &kp RGUI          &trans            &kp RALT          &trans            &trans            &trans            &trans
 			>;
 		};
 
 		/*
-		 * Layer 5: MacNav (hold W in Mac mode)
-		 * Same as Nav but with macOS shortcuts:
-		 *   Home/End → Cmd+Left/Right, Cut/Copy/Paste → Cmd+X/C/V
-		 *   Select Word/Line → Option/Cmd macros
+		 * Layer 5: MacNav (hold Caps in Mac mode). Nav with Cmd / Option shortcuts.
 		 */
 		mac_nav_layer {
 			display-name = "MacNav";
 			bindings = <
-				/* Row 0: blocked */
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none
-				&none         &none         &none         &none  &trans
-				&none         &none         &none
-				/* Row 1: blocked */
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none
-				&none         &none         &none
-				/* Row 2: Tab, Esc, (W held), Cmd+Left, Cmd+Right, Shift */
-				&kp TAB       &kp ESC       &trans        &kp LG(LEFT)  &kp LG(RIGHT)
-				&kp LSHFT     &none         &kp BSPC      &kp UP        &kp DEL
-				&none         &none         &none         &none
-				&none         &none         &none
-				/* Row 3: _, Shift, Shift, _, _, CapsWord, _, Left, Down, Right, Shift+Enter */
-				&none         &kp LSHFT     &kp LSHFT     &none         &none
-				&caps_word    &none         &kp LEFT      &kp DOWN      &kp RIGHT
-				&kp LS(RET)   &none                       &kp RET
-				/* Row 4: Shift, Cmd+Z, Cmd+X, Cmd+C, Cmd+V, _, _, _, MacSelLine, MacSelWord */
-				&kp LSHFT                   &kp LG(Z)     &kp LG(X)     &kp LG(C)
-				&kp LG(V)     &none         &none         &none         &mac_sel_l
-				&mac_sel_w    &none                       &kp RSHFT     &trans
-				/* Row 5: pass mods through, Space=MacExtNav */
-				&kp LCTRL     &kp LGUI      &kp LALT                    &mo MACEXTNAV
-				&trans        &trans  &trans        &kp RCTRL
-				&trans        &trans        &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &trans            &kp BSPC          &kp DEL           &kp LA(BSPC)      &kp LA(DEL)       &kp PG_UP         &kp LA(LEFT)      &kp UP            &kp LA(RIGHT)     &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &kp LG(A)         &kp LG(S)         &mac_sel_l        &mac_sel_w        &caps_word        &kp LG(LEFT)      &kp LEFT          &kp DOWN          &kp RIGHT         &kp LG(RIGHT)     &trans            &trans
+				&trans            &kp LG(Z)         &kp LG(X)         &kp LG(C)         &kp LG(V)         &kp LS(LG(Z))     &kp PG_DN         &kp LG(LBKT)      &kp LG(RBKT)      &trans            &trans            &trans            &trans
+				&trans            &trans            &trans            &mo NUMSYM        &trans            &trans            &trans            &trans            &trans            &trans            &trans
 			>;
 		};
 
 		/*
-		 * Layer 6: MacExtNav (hold Space while in MacNav)
-		 * Same as ExtNav but with macOS shortcuts:
-		 *   Word jump → Option+Arrow, Word delete → Option+Bspc/Del
-		 *   Redo → Cmd+Shift+Z
+		 * Layer 6: NumSym (hold Caps, then Space).
+		 * Right hand numpad: 7 8 9 / 4 5 6 / 1 2 3 with 0 on N, . on /, - + = * /
+		 * on P ; ' [ ]. Left hand symbols: ~ ! @ # $ / ( ) { } | / [ ] < > \\.
+		 * 1 2 3 on the number row type -> , =>{} and ()=> (code snippets).
 		 */
-		mac_extnav_layer {
-			display-name = "MacExtNav";
+		numsym_layer {
+			display-name = "NumSym";
 			bindings = <
-				/* Row 0: blocked */
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none
-				&none         &none         &none         &none  &trans
-				&none         &none         &none
-				/* Row 1: blocked */
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none         &none
-				&none         &none         &none         &none
-				&none         &none         &none
-				/* Row 2: Tab, Esc, _, Cmd+Left, Cmd+Right, Shift, _, Opt+Bspc, PgUp, Opt+Del */
-				&kp TAB       &kp ESC       &trans        &kp LG(LEFT)  &kp LG(RIGHT)
-				&kp LSHFT     &none         &kp LA(BSPC)  &kp PG_UP     &kp LA(DEL)
-				&none         &none         &none         &none
-				&none         &none         &none
-				/* Row 3: _, Shift, Shift, _, _, _, _, Opt+Left, PgDn, Opt+Right, Enter */
-				&none         &kp LSHFT     &kp LSHFT     &none         &none
-				&none         &none         &kp LA(LEFT)  &kp PG_DN     &kp LA(RIGHT)
-				&kp RET       &none                       &kp RET
-				/* Row 4: Shift, Cmd+Shift+Z, Cmd+X, Cmd+C, Cmd+V, _, _, _, MacSelLine, MacSelWord */
-				&kp LSHFT                   &kp LG(LS(Z)) &kp LG(X)     &kp LG(C)
-				&kp LG(V)     &none         &none         &none         &mac_sel_l
-				&mac_sel_w    &none                       &kp RSHFT     &trans
-				/* Row 5: mods pass through, Space is held (layer active) */
-				&kp LCTRL     &kp LGUI      &kp LALT                    &none
-				&trans        &trans  &trans        &kp RCTRL
-				&trans        &trans        &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &c_arw            &lambda           &fn_arw           &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
+				&trans            &kp LS(GRAVE)     &kp LS(N1)        &kp LS(N2)        &kp LS(N3)        &kp LS(N4)        &trans            &kp N7            &kp N8            &kp N9            &kp MINUS         &kp LS(N8)        &kp FSLH          &trans            &trans            &trans            &trans
+				&trans            &kp LS(N9)        &kp LS(N0)        &kp LS(LBKT)      &kp LS(RBKT)      &kp LS(BSLH)      &trans            &kp N4            &kp N5            &kp N6            &kp LS(EQUAL)     &kp EQUAL         &trans
+				&trans            &kp LBKT          &kp RBKT          &kp LS(COMMA)     &kp LS(DOT)       &kp BSLH          &kp N0            &kp N1            &kp N2            &kp N3            &kp DOT           &trans            &trans
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
 			>;
 		};
+
 		/*
-		 * Layer 7: Native (full passthrough — no remapping)
-		 * Toggled by Fn+ScrLk; plain ScrLk toggles it off again. Sits above
-		 * the Mac layers so it also undoes the Mac modifier swap.
+		 * Layer 7: Native (Fn+N). Every key plain; ignores Mac mode.
 		 */
 		native_layer {
 			display-name = "Native";
 			bindings = <
-				/* Row 0: standard F-row, ScrLk position toggles back to base */
-				&kp ESC       &kp F1        &kp F2        &kp F3        &kp F4
-				&kp F5        &kp F6        &kp F7        &kp F8
-				&kp F9        &kp F10       &kp F11       &kp F12  &kp F13
-				&kp PSCRN     &tog NATIVE   &kp PAUSE_BREAK
-				/* Row 1: standard number row */
-				&kp GRAVE     &kp N1        &kp N2        &kp N3        &kp N4
-				&kp N5        &kp N6        &kp N7        &kp N8        &kp N9
-				&kp N0        &kp MINUS     &kp EQUAL     &kp BSPC
-				&kp INS       &kp HOME      &kp PG_UP
-				/* Row 2: standard QWERTY */
-				&kp TAB       &kp Q         &kp W         &kp E         &kp R
-				&kp T         &kp Y         &kp U         &kp I         &kp O
-				&kp P         &kp LBKT      &kp RBKT      &kp BSLH
-				&kp DEL       &kp END       &kp PG_DN
-				/* Row 3: standard home row */
-				&kp CAPS      &kp A         &kp S         &kp D         &kp F
-				&kp G         &kp H         &kp J         &kp K         &kp L
-				&kp SEMI      &kp SQT                     &kp RET
-				/* Row 4: standard shift row */
-				&kp LSHFT                   &kp Z         &kp X         &kp C
-				&kp V         &kp B         &kp N         &kp M         &kp COMMA
-				&kp DOT       &kp FSLH                    &kp RSHFT     &kp UP
-				/* Row 5: standard bottom row */
-				&kp LCTRL     &kp LGUI      &kp LALT                    &kp SPACE
-				&kp RALT      &mo FN  &kp RGUI        &kp RCTRL
-				&kp LEFT      &kp DOWN      &kp RIGHT
+				&kp ESC           &kp F1            &kp F2            &kp F3            &kp F4            &kp F5            &kp F6            &kp F7            &kp F8            &kp F9            &kp F10           &kp F11           &kp F12           &kp F13           &kp PSCRN         &kp SLCK          &kp PAUSE_BREAK
+				&kp GRAVE         &kp N1            &kp N2            &kp N3            &kp N4            &kp N5            &kp N6            &kp N7            &kp N8            &kp N9            &kp N0            &kp MINUS         &kp EQUAL         &kp BSPC          &kp INS           &kp HOME          &kp PG_UP
+				&kp TAB           &kp Q             &kp W             &kp E             &kp R             &kp T             &kp Y             &kp U             &kp I             &kp O             &kp P             &kp LBKT          &kp RBKT          &kp BSLH          &kp DEL           &kp END           &kp PG_DN
+				&kp CAPS          &kp A             &kp S             &kp D             &kp F             &kp G             &kp H             &kp J             &kp K             &kp L             &kp SEMI          &kp SQT           &kp RET
+				&kp LSHFT         &kp Z             &kp X             &kp C             &kp V             &kp B             &kp N             &kp M             &kp COMMA         &kp DOT           &kp FSLH          &kp RSHFT         &kp UP
+				&kp LCTRL         &kp LGUI          &kp LALT          &kp SPACE         &kp RALT          &mo FN            &kp RGUI          &kp RCTRL         &kp LEFT          &kp DOWN          &kp RIGHT
 			>;
 		};
 
 		/*
-		 * Layer 8: Fn — must stay the highest real layer. ZMK resolves a
-		 * key from the highest active layer down, so any layer above Fn that
-		 * binds a key (Mac, Native) would swallow that Fn shortcut, including
-		 * Fn+M and Fn+ScrLk, the only ways back out of those modes.
+		 * Layer 8: Fn. Must stay the highest real layer: ZMK picks a key from the
+		 * highest active layer, so anything above would swallow these shortcuts.
 		 */
 		fn_layer {
 			display-name = "Fn";
 			bindings = <
-				/* Row 0: Fn+Esc=bootloader, Fn+F1-F8=media, Fn+F12=unlock, Fn+ScrLk=Native */
-				&bootloader   &kp C_BRI_DN  &kp C_BRI_UP  &kp C_PREV    &kp C_PP
-				&kp C_NEXT    &kp C_MUTE    &kp C_VOL_DN  &kp C_VOL_UP
-				&trans        &trans        &trans        &studio_unlock  &trans
-				&trans        &tog NATIVE   &trans
-				/* Row 1: Fn+Bspc=RGB toggle, Fn+Ins=BT clear */
-				&trans        &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &out OUT_USB
-				&out OUT_TOG  &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &rgb RGB_TOG
-				&bt BT_CLR    &trans        &trans
-				/* Row 2: Fn+\=RGB effect */
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &rgb RGB_EFF
-				&trans        &trans        &trans
-				/* Row 3: Fn+Enter=RGB effect cycle */
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans        &trans        &trans        &trans
-				&trans        &trans                      &rgb RGB_EFF
-			/* Row 4: Fn+M=toggle Mac, Fn+Up=RGB bright up */
-			&trans                      &trans        &trans        &trans
-			&trans        &trans        &trans        &tog MAC      &trans
-			&trans        &trans                      &trans        &rgb RGB_BRI
-				/* Row 5: Fn+Down=RGB bright down */
-				&trans        &trans        &trans                      &trans
-				&trans        &trans  &trans        &trans
-				&trans        &rgb RGB_BRD &trans
+				&bootloader       &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &studio_unlock    &trans            &kp C_MUTE        &kp C_VOL_UP      &kp C_BRI_UP
+				&trans            &bt BT_SEL 0      &bt BT_SEL 1      &bt BT_SEL 2      &out OUT_USB      &out OUT_TOG      &bt BT_SEL 3      &bt BT_SEL 4      &trans            &trans            &trans            &trans            &trans            &rgb RGB_TOG      &kp C_PREV        &kp C_PP          &kp C_NEXT
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &rgb RGB_HUD      &rgb RGB_HUI      &rgb RGB_EFF      &bt BT_CLR        &kp C_VOL_DN      &kp C_BRI_DN
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &rgb RGB_SPD      &rgb RGB_SPI      &rgb RGB_EFF
+				&trans            &trans            &trans            &trans            &trans            &rgb RGB_BAT      &tog NATIVE       &tog MAC          &trans            &trans            &trans            &trans            &rgb RGB_BRI
+				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &rgb RGB_BRD      &trans
 			>;
 		};
 
