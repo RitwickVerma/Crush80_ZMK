@@ -58,14 +58,14 @@ you hold **Esc and Enter together for 3 seconds**; it then stays on for
 
 ## Two entries in the device list
 
-OpenRGB's raw HID interface (USB interface 1) has to carry the same identification
+OpenRGB's raw HID interface (USB interface 1) must carry the same identification
 as VIA's (usage page 0xFF60, usage 0x61; OpenRGB's detector requires it), so VIA
-sees "Crush 80" twice. The OpenRGB interface only answers full 64-byte packets;
-VIA's 32-byte probes get QMK's "unhandled" reply, so VIA marks it invalid and
-the other entry is the one that works. Pick the one that loads the key layout.
-This relies on the host sending VIA's packets at their real 32-byte length;
-Windows may pad them to 64 bytes, in which case the OpenRGB entry may answer
-VIA's probe and fail to load.
+lists "Crush 80" twice. Both work: the OpenRGB interface answers VIA's 32-byte
+packets exactly like the VIA interface, and answers only OpenRGB's 64-byte
+packets as OpenRGB. (Refusing VIA on that interface does not help: the VIA app
+then mixes up its device list and fails to load the other entry.) VIA decides by
+packet length, so this assumes the browser sends VIA's packets at their real
+32-byte size; Chrome on Linux does.
 
 ## How it fits together
 

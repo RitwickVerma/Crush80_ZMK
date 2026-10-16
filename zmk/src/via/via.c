@@ -35,12 +35,13 @@
 #include <zmk/keymap.h>
 #include <zmk/matrix.h>
 
+#include "via.h"
 #include "via_def.h"
 #include "via_xlat.h"
 
 LOG_MODULE_REGISTER(via, CONFIG_LOG_DEFAULT_LEVEL);
 
-#define VIA_EP_SIZE 32
+#define VIA_EP_SIZE VIA_PACKET_SIZE
 #define VIA_PROTOCOL_VERSION 0x000C
 
 /* VIA command ids (first byte) */
@@ -343,6 +344,16 @@ static void handle(uint8_t *msg) {
     }
 }
 
+/* Two USB threads can deliver VIA packets (this interface's and OpenRGB's, see
+ * via_handle_packet), so serialise them. */
+static K_MUTEX_DEFINE(handle_lock);
+
+void via_handle_packet(uint8_t *msg) {
+    k_mutex_lock(&handle_lock, K_FOREVER);
+    handle(msg);
+    k_mutex_unlock(&handle_lock);
+}
+
 /* ---- USB ----------------------------------------------------------------- */
 
 static const struct device *via_dev;
@@ -400,7 +411,7 @@ static void via_thread_fn(void *a, void *b, void *c) {
             if (len != VIA_EP_SIZE) { /* the protocol is fixed 32-byte packets */
                 continue;
             }
-            handle(buf);
+            via_handle_packet(buf);
             send(buf);
         }
     }

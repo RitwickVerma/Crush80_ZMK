@@ -32,6 +32,9 @@
 #include "rainy_rgb/engine.h"
 #include "rainy_rgb/effects.h"
 #include "rainy_rgb/led_map.h"   /* RRGB_KEY_LED_COUNT, rrgb_led_xy */
+#if IS_ENABLED(CONFIG_VIA)
+#include "via/via.h"
+#endif
 #include "rainy_rgb/led_map.h"
 
 LOG_MODULE_REGISTER(openrgb, CONFIG_LOG_DEFAULT_LEVEL);
@@ -369,12 +372,21 @@ static void openrgb_handle(const uint8_t *data, uint32_t len) {
     uint8_t cmd = data[0];
 
     /* OpenRGB always sends full 64-byte packets. This interface has the same
-     * identity as the VIA one (usage page 0xFF60, usage 0x61), so VIA's
-     * configurator also opens it and probes with 32-byte packets. Answer those
-     * with QMK's "unhandled" id so VIA drops this device instead of treating
-     * our reply as a keyboard of protocol 0x0C00, and never act on them. */
+     * identity as the VIA one (usage page 0xFF60, usage 0x61; OpenRGB's
+     * detector requires it), so VIA's configurator opens it too, with 32-byte
+     * packets. Serve those as VIA, so both entries it lists work: rejecting
+     * this one makes the VIA app mislabel the other (it indexes its filtered
+     * device list with the unfiltered one's positions). */
     if (len < OPENRGB_EP_SIZE) {
         memset(response, 0, sizeof(response));
+#if IS_ENABLED(CONFIG_VIA)
+        if (len == VIA_PACKET_SIZE) {
+            memcpy(response, data, VIA_PACKET_SIZE);
+            via_handle_packet(response);
+            openrgb_send(response);
+            return;
+        }
+#endif
         response[0] = RSP_UNHANDLED;
         response[1] = cmd;
         openrgb_send(response);
