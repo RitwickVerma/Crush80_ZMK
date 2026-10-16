@@ -1,26 +1,23 @@
 /*
  * Wobkey Crush 80 — ZMK keymap
  *
- * Base is a plain 80% layout, so everything types and shortcuts exactly as on any
- * keyboard. Extra function sits behind three held keys, none of which changes
- * what the key does when merely tapped:
+ * Base is a plain 80% layout: every key does what it says, Caps is Caps Lock, and
+ * nothing waits on a timer (no hold-taps anywhere). Everything extra sits behind
+ * the Fn key, which is a plain hold, and every layer here can be edited in VIA.
  *
- *   Caps (hold)        Nav: IJKL arrows, Home/End, word jumps, delete, clipboard
- *   Caps + Space       NumSym: numpad on the right hand, symbols on the left
- *   Fn (hold)          Fn: media, Bluetooth, RGB, Mac / Native toggles
+ *   hold Fn              system controls + navigation (the IJKL cluster)
+ *   hold Fn and Space    numpad and bracket symbols
+ *   Fn+M                 Mac mode on / off (modifiers in Mac order, Cmd shortcuts)
+ *   Shift + Shift        Caps Word (capitals until the next space or punctuation)
  *
  * Layers (the number is what VIA and ZMK Studio show)
- *   0 Base    1 Nav     2,3 spare (empty, yours to use)
- *   4 Mac     modifiers in Mac order (Ctrl Opt Cmd); Caps opens MacNav, not Nav
- *   5 MacNav  Nav with Cmd / Option instead of Ctrl
- *   6 NumSym  7 Native  (every key plain, ignores Mac mode)
- *   8 Fn      must stay the highest real layer, see below
- *   9-11      reserved for layers made in ZMK Studio (must stay last)
+ *   0 Base    1 Mac     2 Fn      3 MacFn   4 Num     5-7 spare (empty, yours)
  *
- * Fn layer: Esc bootloader, F12 Studio unlock, 1-7 Bluetooth profiles / USB /
- * output toggle, Bspc RGB on-off, \ and Enter next effect, [ ] hue, ; ' speed,
- * Up / Down brightness, B battery, Del Bluetooth clear, M Mac toggle, N Native
- * toggle, Ins..PgDn and PrtSc..Pause media.
+ * The order matters, and it is checked by ZMK from the highest layer down: Fn
+ * must sit above Mac so Mac cannot swallow Fn's keys, MacFn above Fn and Num above
+ * MacFn so each can override the one below it, and spare layers last (ZMK numbers
+ * enabled layers first). Bump CONFIG_CRUSH80_KEYMAP_REV when you change the layer
+ * list: it clears live edits (VIA, Studio) saved for the old layout.
  */
 
 /* Build every ZMK behavior, not only the ones this file references, so that
@@ -38,120 +35,35 @@
 #include <via_macro.dtsi>
 #include <dt-bindings/rainy_rgb.h>
 
-/* Layer indices: the order of the layer nodes in the keymap below. */
-#define BASE      0
-#define NAV       1
-#define MAC       4
-#define MACNAV    5
-#define NUMSYM    6
-#define NATIVE    7
-#define FN        8
+#define BASE  0
+#define MAC   1
+#define FN    2
+#define MACFN 3
+#define NUM   4
+
+/* Key positions for the combo below (row 4 of the matrix: LShift ... RShift). */
+#define POS_LSHIFT 64
+#define POS_RSHIFT 75
 
 / {
-	behaviors {
-		/*
-		 * Caps: tap = Caps Lock, hold = navigation. "balanced" turns into a hold as
-		 * soon as another key is pressed and released while Caps is down, so
-		 * Caps+I works at once, while tapping Caps then typing still just types.
-		 */
-		lt_nav: layer_tap_nav {
-			compatible = "zmk,behavior-hold-tap";
-			#binding-cells = <2>;
-			flavor = "balanced";
-			tapping-term-ms = <200>;
-			quick-tap-ms = <150>;
-			bindings = <&mo>, <&kp>;
-		};
+	combos {
+		compatible = "zmk,combos";
 
-		/* The same for Mac mode, opening MacNav. */
-		lt_macnav: layer_tap_macnav {
-			compatible = "zmk,behavior-hold-tap";
-			#binding-cells = <2>;
-			flavor = "balanced";
-			tapping-term-ms = <200>;
-			quick-tap-ms = <150>;
-			bindings = <&mo>, <&kp>;
+		/* Both Shift keys together: Caps Word. */
+		caps_word_combo {
+			key-positions = <POS_LSHIFT POS_RSHIFT>;
+			bindings = <&caps_word>;
+			timeout-ms = <40>;
 		};
 	};
 
-	macros {
-		/*
-		 * Select Word: Ctrl+Left then Shift+Ctrl+Right (Linux/Windows)
-		 */
-		sel_w: sel_w {
-			compatible = "zmk,behavior-macro";
-			#binding-cells = <0>;
-			bindings = <&kp LC(LEFT) &kp LS(LC(RIGHT))>;
-		};
+	/* Mac mode with Fn held: swap in the Mac versions of the keys that differ. */
+	conditional_layers {
+		compatible = "zmk,conditional-layers";
 
-		/*
-		 * Select Line: Home then Shift+End (Linux/Windows)
-		 */
-		sel_l: sel_l {
-			compatible = "zmk,behavior-macro";
-			#binding-cells = <0>;
-			bindings = <&kp HOME &kp LS(END)>;
-		};
-
-		/*
-		 * C-style arrow: ->
-		 */
-		c_arw: c_arw {
-			compatible = "zmk,behavior-macro";
-			#binding-cells = <0>;
-			bindings = <&kp MINUS &kp LS(DOT)>;
-		};
-
-		/*
-		 * Lambda body: => {} with cursor inside braces
-		 */
-		lambda: lambda {
-			compatible = "zmk,behavior-macro";
-			#binding-cells = <0>;
-			bindings = <&kp EQUAL &kp LS(DOT) &kp SPACE &kp LS(LBKT) &kp LS(RBKT) &kp LEFT>;
-		};
-
-		/*
-		 * Arrow function start: () =>
-		 */
-		fn_arw: fn_arw {
-			compatible = "zmk,behavior-macro";
-			#binding-cells = <0>;
-			bindings = <&kp LS(N9) &kp LS(N0) &kp SPACE &kp EQUAL &kp LS(DOT)>;
-		};
-
-		/*
-		 * Mac Select Word: Option+Left then Shift+Option+Right
-		 */
-		mac_sel_w: mac_sel_w {
-			compatible = "zmk,behavior-macro";
-			#binding-cells = <0>;
-			wait-ms = <10>;
-			tap-ms = <10>;
-			bindings
-				= <&macro_press &kp LALT>
-				, <&macro_tap &kp LEFT>
-				, <&macro_press &kp LSHFT>
-				, <&macro_tap &kp RIGHT>
-				, <&macro_release &kp LSHFT &kp LALT>
-				;
-		};
-
-		/*
-		 * Mac Select Line: Cmd+Left then Shift+Cmd+Right
-		 */
-		mac_sel_l: mac_sel_l {
-			compatible = "zmk,behavior-macro";
-			#binding-cells = <0>;
-			wait-ms = <10>;
-			tap-ms = <10>;
-			bindings
-				= <&macro_press &kp LGUI>
-				, <&macro_tap &kp LEFT>
-				, <&macro_press &kp LSHFT>
-				, <&macro_tap &kp RIGHT>
-				, <&macro_release &kp LSHFT &kp LGUI>
-				;
+		mac_fn {
+			if-layers = <MAC FN>;
+			then-layer = <MACFN>;
 		};
 	};
 
@@ -159,162 +71,114 @@
 		compatible = "zmk,keymap";
 
 		/*
-		 * Layer 0: Base. Plain 80%; only Caps differs (tap = Caps Lock, hold = Nav).
+		 * Layer 0: Base. Plain 80%, nothing else. Fn opens layer 2.
 		 */
 		default_layer {
 			display-name = "Base";
 			bindings = <
-				&kp ESC           &kp F1            &kp F2            &kp F3            &kp F4            &kp F5            &kp F6            &kp F7            &kp F8            &kp F9            &kp F10           &kp F11           &kp F12           &kp F13           &kp PSCRN         &kp SLCK          &kp PAUSE_BREAK
-				&kp GRAVE         &kp N1            &kp N2            &kp N3            &kp N4            &kp N5            &kp N6            &kp N7            &kp N8            &kp N9            &kp N0            &kp MINUS         &kp EQUAL         &kp BSPC          &kp INS           &kp HOME          &kp PG_UP
-				&kp TAB           &kp Q             &kp W             &kp E             &kp R             &kp T             &kp Y             &kp U             &kp I             &kp O             &kp P             &kp LBKT          &kp RBKT          &kp BSLH          &kp DEL           &kp END           &kp PG_DN
-				&lt_nav NAV CAPS  &kp A             &kp S             &kp D             &kp F             &kp G             &kp H             &kp J             &kp K             &kp L             &kp SEMI          &kp SQT           &kp RET
-				&kp LSHFT         &kp Z             &kp X             &kp C             &kp V             &kp B             &kp N             &kp M             &kp COMMA         &kp DOT           &kp FSLH          &kp RSHFT         &kp UP
-				&kp LCTRL         &kp LGUI          &kp LALT          &kp SPACE         &kp RALT          &mo FN            &kp RGUI          &kp RCTRL         &kp LEFT          &kp DOWN          &kp RIGHT
+				&kp ESC          &kp F1           &kp F2           &kp F3           &kp F4           &kp F5           &kp F6           &kp F7           &kp F8           &kp F9           &kp F10          &kp F11          &kp F12          &kp F13          &kp PSCRN        &kp SLCK         &kp PAUSE_BREAK
+				&kp GRAVE        &kp N1           &kp N2           &kp N3           &kp N4           &kp N5           &kp N6           &kp N7           &kp N8           &kp N9           &kp N0           &kp MINUS        &kp EQUAL        &kp BSPC         &kp INS          &kp HOME         &kp PG_UP
+				&kp TAB          &kp Q            &kp W            &kp E            &kp R            &kp T            &kp Y            &kp U            &kp I            &kp O            &kp P            &kp LBKT         &kp RBKT         &kp BSLH         &kp DEL          &kp END          &kp PG_DN
+				&kp CAPS         &kp A            &kp S            &kp D            &kp F            &kp G            &kp H            &kp J            &kp K            &kp L            &kp SEMI         &kp SQT          &kp RET
+				&kp LSHFT        &kp Z            &kp X            &kp C            &kp V            &kp B            &kp N            &kp M            &kp COMMA        &kp DOT          &kp FSLH         &kp RSHFT        &kp UP
+				&kp LCTRL        &kp LGUI         &kp LALT         &kp SPACE        &kp RALT         &mo FN           &kp RGUI         &kp RCTRL        &kp LEFT         &kp DOWN         &kp RIGHT
 			>;
 		};
 
 		/*
-		 * Layer 1: Nav (hold Caps).
-		 * Right hand: I J K L cursor, H / ; Home / End, U / O word left / right,
-		 * Y / N page up / down, M / , back / forward.
-		 * Left hand: W Bspc, E Del, R / T delete word, A all, S save, D line, F word,
-		 * G Caps Word, Z X C V undo cut copy paste, B redo. Space opens NumSym.
-		 */
-		nav_layer {
-			display-name = "Nav";
-			bindings = <
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &kp BSPC          &kp DEL           &kp LC(BSPC)      &kp LC(DEL)       &kp PG_UP         &kp LC(LEFT)      &kp UP            &kp LC(RIGHT)     &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &kp LC(A)         &kp LC(S)         &sel_l            &sel_w            &caps_word        &kp HOME          &kp LEFT          &kp DOWN          &kp RIGHT         &kp END           &trans            &trans
-				&trans            &kp LC(Z)         &kp LC(X)         &kp LC(C)         &kp LC(V)         &kp LC(Y)         &kp PG_DN         &kp LA(LEFT)      &kp LA(RIGHT)     &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &mo NUMSYM        &trans            &trans            &trans            &trans            &trans            &trans            &trans
-			>;
-		};
-
-		/*
-		 * Layer 2: spare. Empty on purpose.
-		 */
-		spare_layer_1 {
-			display-name = "Spare 1";
-			bindings = <
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-			>;
-		};
-
-		/*
-		 * Layer 3: spare. Empty on purpose.
-		 */
-		spare_layer_2 {
-			display-name = "Spare 2";
-			bindings = <
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-			>;
-		};
-
-		/*
-		 * Layer 4: Mac (Fn+M). Only the modifiers move: Win -> Option, Alt -> Cmd, and
-		 * the right-hand pair the same way. Caps opens MacNav.
+		 * Layer 1: Mac (Fn+M toggles it). Only what differs on a Mac:
+		 *   Win <-> Alt and the right Alt <-> Super swap, giving Ctrl Opt Cmd Space Cmd
+		 *   Opt in Apple's order, so Cmd+C is a thumb away.
+		 *   PrtSc = Cmd+Shift+4 (screenshot a region)
+		 *   Home / End = Cmd+Left / Right (start / end of line, as on Windows and Linux)
 		 */
 		mac_layer {
 			display-name = "Mac";
 			bindings = <
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&lt_macnav MACNAV CAPS  &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &kp LALT          &kp LGUI          &trans            &kp RGUI          &trans            &kp RALT          &trans            &trans            &trans            &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp LG(LS(N4))   &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp LG(LEFT)     &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp LG(RIGHT)    &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &kp LALT         &kp LGUI         &trans           &kp RGUI         &trans           &kp RALT         &trans           &trans           &trans           &trans
 			>;
 		};
 
 		/*
-		 * Layer 5: MacNav (hold Caps in Mac mode). Nav with Cmd / Option shortcuts.
-		 */
-		mac_nav_layer {
-			display-name = "MacNav";
-			bindings = <
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &trans            &kp BSPC          &kp DEL           &kp LA(BSPC)      &kp LA(DEL)       &kp PG_UP         &kp LA(LEFT)      &kp UP            &kp LA(RIGHT)     &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &kp LG(A)         &kp LG(S)         &mac_sel_l        &mac_sel_w        &caps_word        &kp LG(LEFT)      &kp LEFT          &kp DOWN          &kp RIGHT         &kp LG(RIGHT)     &trans            &trans
-				&trans            &kp LG(Z)         &kp LG(X)         &kp LG(C)         &kp LG(V)         &kp LS(LG(Z))     &kp PG_DN         &kp LG(LBKT)      &kp LG(RBKT)      &trans            &trans            &trans            &trans
-				&trans            &trans            &trans            &mo NUMSYM        &trans            &trans            &trans            &trans            &trans            &trans            &trans
-			>;
-		};
-
-		/*
-		 * Layer 6: NumSym (hold Caps, then Space).
-		 * Right hand numpad: 7 8 9 / 4 5 6 / 1 2 3 with 0 on N, . on /, - + = * /
-		 * on P ; ' [ ]. Left hand symbols: ~ ! @ # $ / ( ) { } | / [ ] < > \\.
-		 * 1 2 3 on the number row type -> , =>{} and ()=> (code snippets).
-		 */
-		numsym_layer {
-			display-name = "NumSym";
-			bindings = <
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &c_arw            &lambda           &fn_arw           &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-				&trans            &kp LS(GRAVE)     &kp LS(N1)        &kp LS(N2)        &kp LS(N3)        &kp LS(N4)        &trans            &kp N7            &kp N8            &kp N9            &kp MINUS         &kp LS(N8)        &kp FSLH          &trans            &trans            &trans            &trans
-				&trans            &kp LS(N9)        &kp LS(N0)        &kp LS(LBKT)      &kp LS(RBKT)      &kp LS(BSLH)      &trans            &kp N4            &kp N5            &kp N6            &kp LS(EQUAL)     &kp EQUAL         &trans
-				&trans            &kp LBKT          &kp RBKT          &kp LS(COMMA)     &kp LS(DOT)       &kp BSLH          &kp N0            &kp N1            &kp N2            &kp N3            &kp DOT           &trans            &trans
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans
-			>;
-		};
-
-		/*
-		 * Layer 7: Native (Fn+N). Every key plain; ignores Mac mode.
-		 */
-		native_layer {
-			display-name = "Native";
-			bindings = <
-				&kp ESC           &kp F1            &kp F2            &kp F3            &kp F4            &kp F5            &kp F6            &kp F7            &kp F8            &kp F9            &kp F10           &kp F11           &kp F12           &kp F13           &kp PSCRN         &kp SLCK          &kp PAUSE_BREAK
-				&kp GRAVE         &kp N1            &kp N2            &kp N3            &kp N4            &kp N5            &kp N6            &kp N7            &kp N8            &kp N9            &kp N0            &kp MINUS         &kp EQUAL         &kp BSPC          &kp INS           &kp HOME          &kp PG_UP
-				&kp TAB           &kp Q             &kp W             &kp E             &kp R             &kp T             &kp Y             &kp U             &kp I             &kp O             &kp P             &kp LBKT          &kp RBKT          &kp BSLH          &kp DEL           &kp END           &kp PG_DN
-				&kp CAPS          &kp A             &kp S             &kp D             &kp F             &kp G             &kp H             &kp J             &kp K             &kp L             &kp SEMI          &kp SQT           &kp RET
-				&kp LSHFT         &kp Z             &kp X             &kp C             &kp V             &kp B             &kp N             &kp M             &kp COMMA         &kp DOT           &kp FSLH          &kp RSHFT         &kp UP
-				&kp LCTRL         &kp LGUI          &kp LALT          &kp SPACE         &kp RALT          &mo FN            &kp RGUI          &kp RCTRL         &kp LEFT          &kp DOWN          &kp RIGHT
-			>;
-		};
-
-		/*
-		 * Layer 8: Fn. Must stay the highest real layer: ZMK picks a key from the
-		 * highest active layer, so anything above would swallow these shortcuts.
+		 * Layer 2: Fn (hold). The highest of the layers you hold, so nothing above it
+		 * can hide these keys.
+		 *
+		 *   system       Esc bootloader   F12 Studio unlock   PrtSc/ScrLk/Pause mute vol+ bri+
+		 *                Ins/Home/PgUp prev play next   End/PgDn vol- bri-
+		 *   connection   1 2 3 6 7 Bluetooth 1-5   4 USB   5 toggle USB/Bluetooth   Del clear BT pairing
+		 *   RGB          Bspc on/off   - = speed   [ ] hue   \ Enter effect   Up/Down brightness   B battery
+		 *   modes        M Mac mode
+		 *   navigation   I J K L arrows   U O Home End   Y N PgUp PgDn   H Bspc   ; Del
+		 *   Space        hold for the Num layer
+		 *
+		 * Shift, Ctrl, Alt and Cmd stay as they are, so Shift+Fn+L selects and
+		 * Ctrl+Fn+J jumps a word (Opt+Fn+J on a Mac).
 		 */
 		fn_layer {
 			display-name = "Fn";
 			bindings = <
-				&bootloader       &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &studio_unlock    &trans            &kp C_MUTE        &kp C_VOL_UP      &kp C_BRI_UP
-				&trans            &bt BT_SEL 0      &bt BT_SEL 1      &bt BT_SEL 2      &out OUT_USB      &out OUT_TOG      &bt BT_SEL 3      &bt BT_SEL 4      &trans            &trans            &trans            &trans            &trans            &rgb RGB_TOG      &kp C_PREV        &kp C_PP          &kp C_NEXT
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &rgb RGB_HUD      &rgb RGB_HUI      &rgb RGB_EFF      &bt BT_CLR        &kp C_VOL_DN      &kp C_BRI_DN
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &rgb RGB_SPD      &rgb RGB_SPI      &rgb RGB_EFF
-				&trans            &trans            &trans            &trans            &trans            &rgb RGB_BAT      &tog NATIVE       &tog MAC          &trans            &trans            &trans            &trans            &rgb RGB_BRI
-				&trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &trans            &rgb RGB_BRD      &trans
+				&bootloader      &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &studio_unlock   &trans           &kp C_MUTE       &kp C_VOL_UP     &kp C_BRI_UP
+				&trans           &bt BT_SEL 0     &bt BT_SEL 1     &bt BT_SEL 2     &out OUT_USB     &out OUT_TOG     &bt BT_SEL 3     &bt BT_SEL 4     &trans           &trans           &trans           &rgb RGB_SPD     &rgb RGB_SPI     &rgb RGB_TOG     &kp C_PREV       &kp C_PP         &kp C_NEXT
+				&trans           &trans           &trans           &trans           &trans           &trans           &kp PG_UP        &kp HOME         &kp UP           &kp END          &trans           &rgb RGB_HUD     &rgb RGB_HUI     &rgb RGB_EFF     &bt BT_CLR       &kp C_VOL_DN     &kp C_BRI_DN
+				&trans           &trans           &trans           &trans           &trans           &trans           &kp BSPC         &kp LEFT         &kp DOWN         &kp RIGHT        &kp DEL          &trans           &rgb RGB_EFF
+				&trans           &trans           &trans           &trans           &trans           &rgb RGB_BAT     &kp PG_DN        &tog MAC         &trans           &trans           &trans           &trans           &rgb RGB_BRI
+				&trans           &trans           &trans           &mo NUM          &trans           &trans           &trans           &trans           &trans           &rgb RGB_BRD     &trans
 			>;
 		};
 
-		/* Layers 9-11: empty slots that ZMK Studio can turn into new layers.
-		 * They must come after every real layer: ZMK numbers the enabled
+		/*
+		 * Layer 3: MacFn (switches on by itself when Mac and Fn are both active).
+		 * U / O become Cmd+Left / Right, so Fn+U / O still mean start / end of line.
+		 */
+		mac_fn_layer {
+			display-name = "MacFn";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp LG(LEFT)     &trans           &kp LG(RIGHT)    &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/*
+		 * Layer 4: Num (hold Fn and Space). Above Fn so it can reuse the IJKL block.
+		 *
+		 *   right hand  7 8 9 -  /  4 5 6 + =  /  0 1 2 3 .      [ * ]  /  Enter
+		 *   left hand   ~ ! @ # $  /  ( ) { } |  /  [ ] < > \
+
+		 */
+		num_layer {
+			display-name = "Num";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &kp LS(GRAVE)    &kp LS(N1)       &kp LS(N2)       &kp LS(N3)       &kp LS(N4)       &trans           &kp N7           &kp N8           &kp N9           &kp MINUS        &kp LS(N8)       &kp FSLH         &trans           &trans           &trans           &trans
+				&trans           &kp LS(N9)       &kp LS(N0)       &kp LS(LBKT)     &kp LS(RBKT)     &kp LS(BSLH)     &trans           &kp N4           &kp N5           &kp N6           &kp LS(EQUAL)    &kp EQUAL        &kp RET
+				&trans           &kp LBKT         &kp RBKT         &kp LS(COMMA)    &kp LS(DOT)      &kp BSLH         &kp N0           &kp N1           &kp N2           &kp N3           &kp DOT          &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/* Layers 5-7: empty slots. VIA shows them as spare layers; ZMK Studio can
+		 * turn them into new layers. They must stay last: ZMK numbers the enabled
 		 * layers first, so a real layer placed after a reserved one is never
-		 * looked up (this once killed Fn entirely). */
-		studio_layer_1 {
+		 * looked up. */
+		spare_layer_1 {
 			status = "reserved";
 		};
 
-		studio_layer_2 {
+		spare_layer_2 {
 			status = "reserved";
 		};
 
-		studio_layer_3 {
+		spare_layer_3 {
 			status = "reserved";
 		};
 	};
