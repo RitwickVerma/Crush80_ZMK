@@ -85,8 +85,16 @@ Keys go to one output at a time. If the cable is in one computer while
 Bluetooth is connected to another, typing goes to the Bluetooth host and the
 cabled one gets nothing: press Fn+4 for USB. The choice is saved.
 
-The board keymap is [`zmk/boards/crush80/crush80.keymap`](zmk/boards/crush80/crush80.keymap).
-Edit it directly, point `CRUSH80_KEYMAP` at your own file, or remap live in
+The keymap is [`config/crush80.keymap`](config/crush80.keymap). Ways to change it:
+
+- **[keymap-editor](https://nickcoutsos.github.io/keymap-editor/)** (graphical,
+  covers hold-taps, combos and macros): in Chrome or Edge choose the
+  *FileSystem* source and open this repository folder. It reads
+  `config/crush80.keymap` and the layout in `config/info.json`. It rewrites the
+  file when saving, so check `git diff` (comments may be dropped), then flash:
+  `python3 scripts/force_recovery.py`, replug USB, `bash update.sh --build`.
+- Edit the file by hand, or point `CRUSH80_KEYMAP` at your own file.
+- Remap live in
 [ZMK Studio](https://zmk.studio): open it in Chrome or Edge (it connects over
 Web Bluetooth), connect to the keyboard, then press Fn+F12 to unlock. Changes
 are saved on the keyboard. Studio can also add up to three new layers. Combos,
@@ -118,7 +126,8 @@ Pinout, LED chain, flash map and stock-firmware notes:
 ## Repository layout
 
 ```
-zmk/              ZMK module: board (DTS, keymap), drivers (USB, BLE, LED strip,
+config/           the keymap (crush80.keymap) and its layout for keymap-editor (info.json)
+zmk/              ZMK module: board (DTS), drivers (USB, BLE, LED strip,
                   battery, watchdog), rainy_rgb engine, OpenRGB, flash management
 conf/             build configuration (app, MCUboot, install bridge)
 patches/          fixes to Zephyr, ZMK, MCUboot and hal_telink, applied by setup.sh

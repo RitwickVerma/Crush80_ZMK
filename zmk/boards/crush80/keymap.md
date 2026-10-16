@@ -2,7 +2,7 @@
 
 Two keymaps share the same layer set:
 
-- **Board keymap** (`zmk/boards/crush80/crush80.keymap`, the default build): a
+- **Board keymap** (`config/crush80.keymap`, the default build): a
   standard 80% layout. Nav, ExtNav, Sym, MacNav and MacExtNav are defined but
   nothing activates them; wire a key to them in the keymap or in ZMK Studio.
 - **Home-row-mods keymap** (`keymaps/example.keymap`, build with
