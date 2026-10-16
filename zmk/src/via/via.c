@@ -59,6 +59,7 @@ LOG_MODULE_REGISTER(via, CONFIG_LOG_DEFAULT_LEVEL);
 #define KBVAL_UPTIME 0x01
 #define KBVAL_LAYOUT_OPTIONS 0x02
 #define KBVAL_MATRIX_STATE 0x03
+#define KBVAL_FIRMWARE_VERSION 0x04
 
 /* The key tester shows which keys are down, so any program that can open the
  * raw HID device could read what is typed. It is therefore off until the user
@@ -268,6 +269,9 @@ static void handle(uint8_t *msg) {
             sys_put_be32((uint32_t)k_uptime_get(), &d[1]);
             break;
         case KBVAL_LAYOUT_OPTIONS:
+            sys_put_be32(0, &d[1]);
+            break;
+        case KBVAL_FIRMWARE_VERSION: /* VIA shows it; the definition does not depend on it */
             sys_put_be32(0, &d[1]);
             break;
         case KBVAL_MATRIX_STATE:

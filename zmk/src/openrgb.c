@@ -58,6 +58,7 @@ enum {
     RSP_FAILURE        = 25,
     RSP_SUCCESS        = 50,
     RSP_END_OF_MESSAGE = 100,
+    RSP_UNHANDLED      = 0xFF, /* QMK/VIA id_unhandled */
 };
 
 /* QMK OpenRGB mode enum values (what we advertise in GET_ENABLED_MODES). */
@@ -366,6 +367,19 @@ static void openrgb_handle(const uint8_t *data, uint32_t len) {
     }
 
     uint8_t cmd = data[0];
+
+    /* OpenRGB always sends full 64-byte packets. This interface has the same
+     * identity as the VIA one (usage page 0xFF60, usage 0x61), so VIA's
+     * configurator also opens it and probes with 32-byte packets. Answer those
+     * with QMK's "unhandled" id so VIA drops this device instead of treating
+     * our reply as a keyboard of protocol 0x0C00, and never act on them. */
+    if (len < OPENRGB_EP_SIZE) {
+        memset(response, 0, sizeof(response));
+        response[0] = RSP_UNHANDLED;
+        response[1] = cmd;
+        openrgb_send(response);
+        return;
+    }
 
     if (cmd == CMD_SET_LEDS) {
         cmd_set_leds(data, len);
