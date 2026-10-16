@@ -22,7 +22,7 @@ The numbers are what VIA and ZMK Studio show. Live edits are saved by number.
 | 0 | Base | always on |
 | 1 | Mac | Fn+M (toggle) |
 | 2 | Fn | hold Fn |
-| 3 | MacFn | automatic: Mac and Fn both on |
+| 3 | MacFn | hold right Win (numpad on the nav cluster) |
 | 4 | Num | hold Fn and Space |
 | 5 | Macro | Mac mode + Fn + Space; P plays macro 0 |
 | 6-8 | spare | empty; VIA lists them, ZMK Studio can fill them |
@@ -50,7 +50,7 @@ layout on first boot.
         W paragraph up      A word left     S paragraph down     D word right
 ```
 
-A D W S are Ctrl+Left / Right / Up / Down (Option+arrows in Mac mode, through MacFn).
+A D W S are Ctrl+Left / Right / Up / Down.
 No OS has a sentence keystroke; paragraph is the closest, and it works in browsers,
 Word and most text fields (some editors, such as VS Code, use Ctrl+Up / Down to
 scroll instead).
@@ -77,9 +77,14 @@ Only what differs on a Mac: the left Win and Alt swap, and so do right Alt and S
 Win key is left alone: it is the key that holds MacFn, your numpad), giving
 Ctrl Opt Cmd Space Cmd in Apple's order. PrtSc is Cmd+Shift+4 (screenshot a
 region), Home and End are Cmd+Left and Cmd+Right (start and end of line, as on
-Windows and Linux). MacFn does the same for Fn+U and Fn+O, and turns Fn+A D W S into
-Option+arrows. MacFn is a ZMK
-conditional layer: it switches on by itself when Mac and Fn are both active.
+Windows and Linux). Layer 3 (right Win) holds the numpad on the nav cluster; its
+Space key holds layer 5 (Macro).
+
+Layers stack: ZMK keeps a set of active layers and looks each key up from the highest one
+down, with transparent keys falling through, so right Win, then Space, then P reads P from
+layer 5. A ZMK *conditional layer* is the one thing to avoid for a layer you hold by hand:
+it re-checks its rule on every layer change and switches the layer off whenever the rule
+is false, which is what once made right Win dead.
 
 ## Both Shift keys: Caps Word
 

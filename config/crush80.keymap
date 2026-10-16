@@ -58,16 +58,6 @@
 		};
 	};
 
-	/* Mac mode with Fn held: swap in the Mac versions of the keys that differ. */
-	conditional_layers {
-		compatible = "zmk,conditional-layers";
-
-		mac_fn {
-			if-layers = <MAC FN>;
-			then-layer = <MACFN>;
-		};
-	};
-
 	keymap {
 		compatible = "zmk,keymap";
 
@@ -120,7 +110,7 @@
 		 *
 		 * Shift, Ctrl, Alt and Cmd stay as they are, so Shift+Fn+L selects and
 		 * Shift+Fn+D selects a word. A D W S send Ctrl+Left / Right / Up / Down
-		 * (MacFn turns them into Option+arrows on a Mac).
+		 * (the Mac-specific versions live on layer 3, which the right Win key holds).
 		 */
 		fn_layer {
 			display-name = "Fn";
@@ -135,7 +125,10 @@
 		};
 
 		/*
-		 * Layer 3: MacFn (switches on by itself when Mac and Fn are both active).
+		 * Layer 3: MacFn. Held by the right Win key (your numpad on the nav cluster).
+		 * It is a plain held layer: an earlier conditional layer for it forced it off
+		 * whenever Mac mode was not on, which made the numpad and the macro layer
+		 * (Space on this layer) unreachable.
 		 * U / O become Cmd+Left / Right, so Fn+U / O still mean start / end of line,
 		 * and A D W S become Option+arrows (word and paragraph, the Mac way).
 		 */
