@@ -80,8 +80,8 @@ plain hold, and every layer can be edited in VIA.
 
 | Fn + | Action | Fn + | Action |
 |---|---|---|---|
-| I J K L | ↑ ← ↓ → | U / O | Home / End |
-| Y / N | Page up / down | H / ; | Backspace / Delete |
+| H J K L | ← ↓ ↑ → | U / O | Home / End |
+| Y / N | Page up / down | X / ; | Backspace / Delete |
 | A / D | Word left / right | W / S | Paragraph up / down |
 | 1 2 3 / 6 7 | Bluetooth profiles 1-3 / 4-5 | 4 / 5 | USB output / toggle USB and Bluetooth |
 | Del | Clear the current Bluetooth pairing | M | Mac mode on / off |

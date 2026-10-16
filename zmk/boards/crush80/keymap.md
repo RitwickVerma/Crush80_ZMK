@@ -24,7 +24,8 @@ The numbers are what VIA and ZMK Studio show. Live edits are saved by number.
 | 2 | Fn | hold Fn |
 | 3 | MacFn | automatic: Mac and Fn both on |
 | 4 | Num | hold Fn and Space |
-| 5-7 | spare | empty; VIA lists them, ZMK Studio can fill them |
+| 5 | Macro | Mac mode + Fn + Space; P plays macro 0 |
+| 6-8 | spare | empty; VIA lists them, ZMK Studio can fill them |
 
 ZMK looks up a key in the highest active layer first, so the order is deliberate:
 Fn above Mac (so Mac cannot hide Fn's keys), MacFn above Fn and Num above MacFn
@@ -42,8 +43,8 @@ layout on first boot.
  Ins Prev   Home Play   PgUp Next       End Vol-   PgDn Bri-      Del clear BT pairing
  B battery   M Mac mode
 
-        Y PgUp   U Home   I Up      O End
-        H Bspc   J Left   K Down    L Right    ; Del
+        Y PgUp   U Home             O End
+        H Left   J Down   K Up      L Right    ; Del      X Bspc
         N PgDn                      Space  hold for Num
 
         W paragraph up      A word left     S paragraph down     D word right
@@ -72,8 +73,9 @@ keymap, so they follow your edits.
 
 ## Mac (Fn+M) and MacFn
 
-Only what differs on a Mac: Win and Alt swap, and so do right Alt and Super, giving
-Ctrl Opt Cmd Space Cmd Opt in Apple's order. PrtSc is Cmd+Shift+4 (screenshot a
+Only what differs on a Mac: the left Win and Alt swap, and so do right Alt and Super (the right
+Win key is left alone: it is the key that holds MacFn, your numpad), giving
+Ctrl Opt Cmd Space Cmd in Apple's order. PrtSc is Cmd+Shift+4 (screenshot a
 region), Home and End are Cmd+Left and Cmd+Right (start and end of line, as on
 Windows and Linux). MacFn does the same for Fn+U and Fn+O, and turns Fn+A D W S into
 Option+arrows. MacFn is a ZMK
@@ -91,3 +93,11 @@ Edit the file and reflash, or edit live in VIA or ZMK Studio (docs/via.md). A ke
 edited live is stored on the keyboard and then wins over the file until the layout
 revision changes or you reset the keymap in ZMK Studio; reflashing alone does not
 undo it.
+
+## Your layout changes
+
+The right Win key holds MacFn (layer 3), which in practice is a numpad on the nav
+cluster (Ins Home PgUp = 4 5 6, Del End PgDn = 1 2 3, and so on); Space on it holds
+the Macro layer. These came from live edits and are now in the file. The Mac layer
+used to turn the right Win key into Right Alt, which broke that numpad whenever Mac mode
+was on; the Mac layer now leaves the right Win key transparent.
