@@ -1,5 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
+#include <zephyr/irq.h>
 #include "overlay.h"
 #include "color.h"
 #include "led_map.h"     /* rrgb_led_for_position */
@@ -9,10 +11,10 @@
 #define BAT_SEG_FIRST    18   /* number row keys 1..0 = positions 18..27 */
 #define BAT_SEG_COUNT    10
 
-/* Keymap positions bound on the Fn layer (one bit each), supplied by the
- * adapter from the live keymap whenever Fn activates, so it follows keymap
- * and ZMK Studio edits. */
-static uint8_t s_fn_keys[RRGB_FN_BITMAP_BYTES];
+/* Colour of each keymap position while Fn is held (black = not lit), supplied
+ * by the adapter from the live keymap and state, so it follows VIA and ZMK
+ * Studio edits. */
+static struct rrgb s_fn_px[RRGB_FN_POSITIONS];
 
 static volatile bool     s_caps;
 static volatile bool     s_fn;
@@ -20,9 +22,11 @@ static volatile uint8_t  s_battery;
 static volatile uint32_t s_bat_until;
 
 void rrgb_overlay_set_caps(bool on)        { s_caps = on; }
-void rrgb_overlay_set_fn(bool active, const uint8_t *fn_key_bitmap) {
-    if (active && fn_key_bitmap) {
-        for (unsigned i = 0; i < RRGB_FN_BITMAP_BYTES; i++) { s_fn_keys[i] = fn_key_bitmap[i]; }
+void rrgb_overlay_set_fn(bool active, const struct rrgb *fn_colors) {
+    if (active && fn_colors) {
+        unsigned key = irq_lock();   /* the render thread reads this table */
+        memcpy(s_fn_px, fn_colors, sizeof(s_fn_px));
+        irq_unlock(key);
     }
     s_fn = active;
 }
@@ -45,9 +49,11 @@ void rrgb_overlay_render(struct rrgb *px, uint16_t n, uint32_t tick) {
     /* 1. Fn-highlight: black out, light only Fn-active keys white. */
     if (s_fn) {
         for (uint16_t i = 0; i < n; i++) { px[i] = (struct rrgb){0, 0, 0}; }
-        for (unsigned pos = 0; pos < RRGB_FN_BITMAP_BYTES * 8; pos++) {
-            if (s_fn_keys[pos / 8] & (1u << (pos % 8))) {
-                set_pos(px, n, (uint8_t)pos, (struct rrgb){255, 255, 255});
+        for (unsigned pos = 0; pos < RRGB_FN_POSITIONS; pos++) {
+            struct rrgb c = s_fn_px[pos];
+
+            if (c.r || c.g || c.b) {
+                set_pos(px, n, (uint8_t)pos, c);
             }
         }
     }

@@ -72,43 +72,44 @@ Full instructions, including recovery and going back to stock:
 
 ## Keymap
 
-The base layer is a plain 80% layout: everything types and shortcuts exactly as
-on any keyboard. Extra function sits behind three held keys, and none of them
-changes what the key does when merely tapped.
-
-**Hold Caps (Caps Lock still works when tapped): navigation**
-
-| Key | Does | Key | Does |
-|---|---|---|---|
-| I J K L | ↑ ← ↓ → | H / ; | Home / End |
-| U / O | Word left / right | Y / N | Page up / down |
-| M / , | Back / forward (Alt+←/→) | W / E | Backspace / Delete |
-| R / T | Delete word back / forward | Z X C V | Undo, cut, copy, paste |
-| A / S | Select all / save | B | Redo |
-| D / F | Select line / word | G | Caps Word |
-
-Shift, Ctrl and Alt work as usual, so Caps+Shift+L selects. In Mac mode the same
-keys use Cmd and Option (Cmd+Z, Option+← ...).
-
-**Hold Caps, then Space: numpad and symbols**
-
-Right hand numpad: `7 8 9` on U I O, `4 5 6` on J K L, `1 2 3` on M , ., `0` on N,
-`.` on /, with `- + = * /` on P ; ' [ ]. Left hand symbols: `~ ! @ # $` on Q-T,
-`( ) { } |` on A-G, `[ ] < > \` on Z-B. The number row types `->`, `=>{}` and
-`()=>` for code.
+Base is a plain 80% layout: every key does what it says, Caps is Caps Lock, and
+nothing waits on a timer. All the extras sit behind the **Fn** key, which is a
+plain hold, and every layer can be edited in VIA.
 
 **Hold Fn**
 
 | Fn + | Action | Fn + | Action |
 |---|---|---|---|
-| Esc | Bootloader (see known issues) | 1 2 3 / 6 7 | Bluetooth profiles 1-3 / 4-5 |
-| PrtSc / ScrLk / Pause | Mute / volume up / brightness up | 4 | USB output |
-| Ins / Home / PgUp | Previous / play / next | 5 | Toggle USB / Bluetooth |
-| End / PgDn | Volume down / brightness down | Del | Clear Bluetooth pairing |
-| Backspace | RGB on / off | [ ] / ; ' | RGB hue / speed |
-| \ or Enter | Next RGB effect | ↑ / ↓ | RGB brightness |
-| F12 | Unlock ZMK Studio | B | Show battery level |
-| M | Mac mode: Win/Alt become Option/Cmd | N | Native (every key plain) |
+| I J K L | ↑ ← ↓ → | U / O | Home / End |
+| Y / N | Page up / down | H / ; | Backspace / Delete |
+| A / D | Word left / right | W / S | Paragraph up / down |
+| 1 2 3 / 6 7 | Bluetooth profiles 1-3 / 4-5 | 4 / 5 | USB output / toggle USB and Bluetooth |
+| Del | Clear the current Bluetooth pairing | M | Mac mode on / off |
+| PrtSc / ScrLk / Pause | Mute / volume up / brightness up | Ins / Home / PgUp | Previous / play / next |
+| End / PgDn | Volume down / brightness down | Bspc | RGB on / off |
+| \ or Enter | Next RGB effect | [ ] / - = | RGB hue / speed |
+| ↑ / ↓ | RGB brightness | B | Show battery level |
+| F12 | Unlock ZMK Studio | Esc | Bootloader (see known issues) |
+
+Shift, Ctrl, Alt and Cmd keep working with these, so Shift+Fn+L selects a
+character and Shift+Fn+D selects a word. A D W S send Ctrl+arrows (Option+arrows
+in Mac mode). There is no real "sentence" keystroke in any OS; paragraph is the
+closest, and it works in browsers, Word and most text fields.
+
+**Hold Fn and Space: numpad and symbols**
+
+Right hand: `7 8 9` on U I O, `4 5 6` on J K L, `1 2 3` on M , ., `0` on N, `.` on /,
+and `- + = * /` on P ; ' [ ]. Left hand: `~ ! @ # $` on Q-T, `( ) { } |` on A-G,
+`[ ] < > \` on Z-B.
+
+**Both Shift keys together:** Caps Word (capitals until the next space or punctuation).
+
+**Mac mode (Fn+M):** Win and Alt swap to give Ctrl Opt Cmd in Apple's order, PrtSc
+takes a Cmd+Shift+4 screenshot, and Home / End move to the start / end of the line.
+
+**The keys show their state.** While you hold Fn, every key it binds lights white;
+the active Bluetooth profile is blue (orange while it waits for a host), the USB key is
+green when USB is the output, and the Mac key is orange when Mac mode is on.
 
 Keys go to one output at a time. If the cable is in one computer while
 Bluetooth is connected to another, typing goes to the Bluetooth host and the
@@ -122,7 +123,7 @@ The keymap is [`config/crush80.keymap`](config/crush80.keymap). Ways to change i
   hold-tap timings are not available there.
 - **[ZMK Studio](https://zmk.studio)** (Bluetooth): open it in Chrome or Edge,
   connect to the keyboard, then press Fn+F12 to unlock. Studio can also add up to
-  three new layers. Combos, macros and hold-tap timings are not editable there
+  three new layers (VIA shows the same three as spare layers 5-7). Combos, macros and hold-tap timings are not editable there
   either.
 - **The keymap file**: edit it, or point `CRUSH80_KEYMAP` at your own file, then
   reflash with `python3 scripts/force_recovery.py`, replug USB,
@@ -131,7 +132,9 @@ The keymap is [`config/crush80.keymap`](config/crush80.keymap). Ways to change i
 
 VIA and Studio edit the same stored keymap: a change in one shows in the other.
 `config/crush80.keymap` is what the keyboard falls back to when that stored
-keymap is reset.
+keymap is reset. Normal firmware updates keep your live edits; a new layout
+revision (`CONFIG_CRUSH80_KEYMAP_REV`, raised when the layer list changes) clears
+them on first boot, so edits can never land on the wrong layer.
 
 ## Inside the keyboard
 

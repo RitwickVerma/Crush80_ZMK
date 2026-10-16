@@ -34,6 +34,15 @@ config RAINY_RGB
 	  Custom WS2812 lighting engine (effects, reactivity, per-key) that
 	  replaces ZMK's rgb_underglow. Owns the led_strip device directly.
 
+config CRUSH80_KEYMAP_REV
+	int "Keymap layout revision"
+	default 2
+	depends on ZMK_KEYMAP_SETTINGS_STORAGE
+	help
+	  Live edits made in VIA or ZMK Studio are stored per layer number. When the
+	  layer list in crush80.keymap changes, raise this: the first boot clears the
+	  saved edits so they cannot land on the wrong layers (see keymap_rev.c).
+
 config OPENRGB
 	bool "OpenRGB support over Raw HID (QMK OpenRGB protocol v0x0C)"
 	depends on RAINY_RGB && USB_DEVICE_HID

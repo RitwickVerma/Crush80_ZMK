@@ -6,10 +6,11 @@
 
 /* Neutral state — set by the adapter from the ZMK event thread. */
 void rrgb_overlay_set_caps(bool on);
-/* Fn held: light the keymap positions set in fn_key_bitmap (bit p = position
- * p, RRGB_FN_BITMAP_BYTES long; copied, ignored when inactive). */
-#define RRGB_FN_BITMAP_BYTES 12   /* 96 positions >= the 88 keys */
-void rrgb_overlay_set_fn(bool active, const uint8_t *fn_key_bitmap);
+/* Fn held: light every keymap position whose colour in fn_colors is not black
+ * (RRGB_FN_POSITIONS entries, copied; ignored when inactive). The adapter sets
+ * white for a bound key and a state colour for keys that show state. */
+#define RRGB_FN_POSITIONS 88
+void rrgb_overlay_set_fn(bool active, const struct rrgb *fn_colors);
 void rrgb_overlay_set_battery(uint8_t pct);
 void rrgb_overlay_battery_show(uint32_t tick);   /* start the ~3s gauge window */
 

@@ -12,7 +12,13 @@
 #include <zmk/behavior.h> /* struct zmk_behavior_binding */
 #include <zmk/hid_indicators.h>
 #include <zmk/battery.h>
+#include <zmk/ble.h>
+#include <zmk/endpoints.h>
+#include <dt-bindings/zmk/bt.h>
+#include <dt-bindings/zmk/outputs.h>
 #include <zmk/events/layer_state_changed.h>
+#include <zmk/events/endpoint_changed.h>
+#include <zmk/events/ble_active_profile_changed.h>
 #include <zmk/events/hid_indicators_changed.h>
 #include <zmk/events/battery_state_changed.h>
 #include <zmk/events/activity_state_changed.h>
@@ -39,21 +45,35 @@ int rrgb_strip_init(void) {
     return 0;
 }
 
-/* The Fn layer is found by its display name ("Fn"), not by index: its index
- * depends on the keymap (it must be the top real layer, see crush80.keymap). */
-static int fn_layer_id(void) {
+/* Layers are found by display name, not number: the numbers depend on the keymap
+ * (and on live edits made in ZMK Studio). */
+static int layer_id_by_name(const char *want) {
     for (int id = 0; id < ZMK_KEYMAP_LAYERS_LEN; id++) {
         const char *name = zmk_keymap_layer_name(id);
-        if (name && strcmp(name, "Fn") == 0) {
+
+        if (name && strcmp(name, want) == 0) {
             return id;
         }
     }
     return -1;
 }
 
-/* Tell the overlay whether Fn is held and, if so, which keys it binds
- * (anything but &trans / &none), read from the live keymap so ZMK Studio
- * edits are reflected. */
+static int fn_layer_id(void) {
+    return layer_id_by_name("Fn");
+}
+
+/* Colours the Fn overlay shows (the keys light up as what they do, and a few
+ * also show what is currently selected). */
+static const struct rrgb COL_BOUND = {255, 255, 255};   /* bound key */
+static const struct rrgb COL_USB = {0, 255, 60};        /* USB is the output */
+static const struct rrgb COL_BT = {0, 90, 255};         /* active Bluetooth profile, connected */
+static const struct rrgb COL_BT_WAIT = {255, 140, 0};   /* active profile, waiting for a host */
+static const struct rrgb COL_MODE = {255, 70, 0};       /* a mode toggle that is on */
+
+/* Tell the overlay whether Fn is held and, if so, how to colour each key. Read
+ * from the live keymap, so it follows VIA and ZMK Studio edits: a key that
+ * selects a Bluetooth profile, USB output or Mac mode shows that state wherever
+ * it is bound. Anything else bound on Fn (not &trans / &none) is plain white. */
 static void fn_overlay_update(void) {
     int fn = fn_layer_id();
 
@@ -62,17 +82,32 @@ static void fn_overlay_update(void) {
         return;
     }
 
-    uint8_t bitmap[RRGB_FN_BITMAP_BYTES] = {0};
+    int mac = layer_id_by_name("Mac");
+    struct zmk_endpoint_instance ep = zmk_endpoint_get_selected();
+    struct rrgb colors[RRGB_FN_POSITIONS] = {0};
 
-    for (int pos = 0; pos < ZMK_KEYMAP_LEN && pos < RRGB_FN_BITMAP_BYTES * 8; pos++) {
+    for (int pos = 0; pos < ZMK_KEYMAP_LEN && pos < RRGB_FN_POSITIONS; pos++) {
         const struct zmk_behavior_binding *b = zmk_keymap_get_layer_binding_at_idx(fn, pos);
 
-        if (b && b->behavior_dev && strcmp(b->behavior_dev, "transparent") != 0 &&
-            strcmp(b->behavior_dev, "none") != 0) {
-            bitmap[pos / 8] |= BIT(pos % 8);
+        if (!b || !b->behavior_dev || strcmp(b->behavior_dev, "transparent") == 0 ||
+            strcmp(b->behavior_dev, "none") == 0) {
+            continue;
         }
+        struct rrgb c = COL_BOUND;
+
+        if (strcmp(b->behavior_dev, "bluetooth") == 0 && b->param1 == BT_SEL_CMD &&
+            ep.transport == ZMK_TRANSPORT_BLE && b->param2 == zmk_ble_active_profile_index()) {
+            c = zmk_ble_active_profile_is_connected() ? COL_BT : COL_BT_WAIT;
+        } else if (strcmp(b->behavior_dev, "outputs") == 0 && b->param1 == OUT_USB &&
+                   ep.transport == ZMK_TRANSPORT_USB) {
+            c = COL_USB;
+        } else if (strcmp(b->behavior_dev, "toggle_layer") == 0 && mac >= 0 &&
+                   (int)b->param1 == mac && zmk_keymap_layer_active(mac)) {
+            c = COL_MODE;
+        }
+        colors[pos] = c;
     }
-    rrgb_overlay_set_fn(true, bitmap);
+    rrgb_overlay_set_fn(true, colors);
 }
 
 static int rrgb_event_listener(const zmk_event_t *eh) {
@@ -81,6 +116,8 @@ static int rrgb_event_listener(const zmk_event_t *eh) {
 
     const struct zmk_layer_state_changed *lev = as_zmk_layer_state_changed(eh);
     if (lev) { fn_overlay_update(); }
+
+    if (as_zmk_endpoint_changed(eh) || as_zmk_ble_active_profile_changed(eh)) { fn_overlay_update(); }
 
     const struct zmk_hid_indicators_changed *iev = as_zmk_hid_indicators_changed(eh);
     if (iev) { rrgb_overlay_set_caps((iev->indicators & BIT(1)) != 0); }
@@ -98,6 +135,8 @@ static int rrgb_event_listener(const zmk_event_t *eh) {
 ZMK_LISTENER(rrgb_listener, rrgb_event_listener);
 ZMK_SUBSCRIPTION(rrgb_listener, zmk_position_state_changed);
 ZMK_SUBSCRIPTION(rrgb_listener, zmk_layer_state_changed);
+ZMK_SUBSCRIPTION(rrgb_listener, zmk_endpoint_changed);
+ZMK_SUBSCRIPTION(rrgb_listener, zmk_ble_active_profile_changed);
 ZMK_SUBSCRIPTION(rrgb_listener, zmk_hid_indicators_changed);
 ZMK_SUBSCRIPTION(rrgb_listener, zmk_battery_state_changed);
 #if IS_ENABLED(CONFIG_RAINY_RGB_IDLE_BLANK)

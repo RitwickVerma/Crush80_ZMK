@@ -65,6 +65,12 @@ if(CONFIG_OPENRGB)
   zephyr_library_sources(src/openrgb.c)
 endif()
 
+if(CONFIG_CRUSH80_KEYMAP_REV)
+  zephyr_library_named(keymap_rev)
+  zephyr_library_include_directories(${ZEPHYR_BASE}/../zmk-src/app/include)
+  zephyr_library_sources(src/keymap_rev.c)
+endif()
+
 if(CONFIG_VIA)
   zephyr_library_named(via)
   zephyr_library_include_directories(
