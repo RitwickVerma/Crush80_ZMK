@@ -89,9 +89,11 @@ The keymap is [`config/crush80.keymap`](config/crush80.keymap). Ways to change i
 
 - **[keymap-editor](https://nickcoutsos.github.io/keymap-editor/)** (graphical,
   covers hold-taps, combos and macros): in Chrome or Edge choose the
-  *FileSystem* source and open this repository folder. It reads
-  `config/crush80.keymap` and the layout in `config/info.json`. It rewrites the
-  file when saving, so check `git diff` (comments may be dropped), then flash:
+  *File System* source and import `config/crush80.keymap`. When it asks to
+  identify the keyboard, pick *Custom...* and paste the contents of
+  `config/info.json` (the layout; on Linux `wl-copy < config/info.json`). It
+  rewrites the keymap when saving, so check `git diff` (comments may be
+  dropped), then flash:
   `python3 scripts/force_recovery.py`, replug USB, `bash update.sh --build`.
 - Edit the file by hand, or point `CRUSH80_KEYMAP` at your own file.
 - Remap live in
