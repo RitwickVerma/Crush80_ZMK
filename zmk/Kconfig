@@ -44,6 +44,15 @@ config OPENRGB
 	  CONFIG_USB_HID_DEVICE_COUNT=2 and the per-instance interrupt-OUT
 	  patch to the Zephyr USB HID class.
 
+config VIA
+	bool "VIA keymap editing over USB (VIA protocol 12)"
+	depends on USB_DEVICE_HID && ZMK_KEYMAP_SETTINGS_STORAGE
+	help
+	  Adds a third HID interface (HID_2, raw HID 0xFF60/0x61, 32-byte
+	  reports) so the VIA configurator can read and edit the live ZMK keymap,
+	  the same one ZMK Studio edits. Needs CONFIG_USB_HID_DEVICE_COUNT=3 and
+	  the per-instance interrupt-OUT Zephyr patches. See docs/via.md.
+
 config RAINY_RGB_WALKER
 	bool "Walker diagnostic effect (LED-map calibration)"
 	depends on RAINY_RGB

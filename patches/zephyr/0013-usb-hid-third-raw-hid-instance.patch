@@ -1,0 +1,87 @@
+diff --git a/subsys/usb/device/class/hid/core.c b/subsys/usb/device/class/hid/core.c
+--- a/subsys/usb/device/class/hid/core.c
++++ b/subsys/usb/device/class/hid/core.c
+@@ -22,11 +22,14 @@ LOG_MODULE_REGISTER(usb_hid, CONFIG_USB_HID_LOG_LEVEL);
+ #define HID_INT_IN_EP_IDX		0
+ #define HID_INT_OUT_EP_IDX		1
+ 
+-/* Max packet size for the raw-HID instance (1). The QMK OpenRGB protocol
+- * uses 64-byte reports; the keyboard instance (0) keeps the (smaller)
+- * CONFIG_HID_INTERRUPT_EP_MPS so the B91's 256-byte USB SRAM is not blown
+- * away by a second full-size endpoint. */
++/* Max packet size for the raw-HID instances. Instance 1 (OpenRGB) uses 64-byte
++ * reports and instance 2 (VIA) 32-byte ones; the keyboard instance (0) keeps
++ * the (smaller) CONFIG_HID_INTERRUPT_EP_MPS so the B91's 256-byte USB SRAM is
++ * not blown away by full-size endpoints. */
+ #define HID_RAW_EP_MPS			64
++#define HID_VIA_EP_MPS			32
++#define HID_RAW_INSTANCE_EP_MPS(x)					\
++	COND_CODE_1(x, (HID_RAW_EP_MPS), (HID_VIA_EP_MPS))
+ 
+ struct usb_hid_class_subdescriptor {
+ 	uint8_t bDescriptorType;
+@@ -117,28 +120,28 @@ struct usb_hid_raw_config {
+ 		.bInterval = CONFIG_USB_HID_POLL_INTERVAL_MS,		\
+ 	}
+ 
+-/* Instance 1 (raw HID) gets struct usb_hid_raw_config with an interrupt-OUT
+- * endpoint; every other instance is a plain keyboard-style interface with a
+- * single interrupt-IN endpoint. */
++/* Every instance but 0 is a raw-HID interface and gets struct
++ * usb_hid_raw_config with an interrupt-OUT endpoint; instance 0 is a plain
++ * keyboard-style interface with a single interrupt-IN endpoint. */
+ #define DEFINE_HID_DESCR(x, _)						\
+ 	USBD_CLASS_DESCR_DEFINE(primary, x)				\
+-	COND_CODE_1(x, (struct usb_hid_raw_config),			\
+-		       (struct usb_hid_config)) hid_cfg_##x = {		\
++	COND_CODE_0(x, (struct usb_hid_config),				\
++		       (struct usb_hid_raw_config)) hid_cfg_##x = {	\
+ 	/* Interface descriptor */					\
+-	.if0 = INITIALIZER_IF(COND_CODE_1(x, (2), (1))),		\
++	.if0 = INITIALIZER_IF(COND_CODE_0(x, (1), (2))),		\
+ 	.if0_hid = INITIALIZER_IF_HID,					\
+ 	.if0_int_in_ep =						\
+ 		INITIALIZER_IF_EP(AUTO_EP_IN,				\
+ 				  USB_DC_EP_INTERRUPT,			\
+-				  COND_CODE_1(x,				\
+-					(HID_RAW_EP_MPS),		\
+-					(CONFIG_HID_INTERRUPT_EP_MPS))),	\
+-	COND_CODE_1(x,							\
++				  COND_CODE_0(x,				\
++					(CONFIG_HID_INTERRUPT_EP_MPS),	\
++					(HID_RAW_INSTANCE_EP_MPS(x)))),	\
++	COND_CODE_0(x,							\
++		(),							\
+ 		(.if0_int_out_ep =					\
+ 			INITIALIZER_IF_EP(AUTO_EP_OUT,			\
+ 					  USB_DC_EP_INTERRUPT,		\
+-					  HID_RAW_EP_MPS),),		\
+-		())							\
++					  HID_RAW_INSTANCE_EP_MPS(x)),))	\
+ 	}
+ 
+ struct hid_device_info {
+@@ -611,16 +614,16 @@ static __maybe_unused void hid_int_out(uint8_t ep,
+ 		.ep_addr = addr,			\
+ 	}
+ 
+-/* Describe Endpoints configuration.  HID instance 1 is the OpenRGB raw-HID
+- * interface; give ONLY it an interrupt-OUT endpoint (the B91 controller has
+- * only 2 OUT endpoints, EP5 and EP6).  Instance 0 (keyboard) keeps the
+- * control pipe for host->device data.  Must match DEFINE_HID_DESCR. */
++/* Describe Endpoints configuration.  HID instances 1 (OpenRGB) and 2 (VIA)
++ * are raw-HID interfaces; give ONLY them an interrupt-OUT endpoint (the B91
++ * controller has only 2 OUT endpoints, EP5 and EP6).  Instance 0 (keyboard)
++ * keeps the control pipe for host->device data.  Must match DEFINE_HID_DESCR. */
+ #define DEFINE_HID_EP(x, _)						\
+ 	static struct usb_ep_cfg_data hid_ep_data_##x[] = {		\
+ 		INITIALIZER_EP_DATA(hid_int_in, AUTO_EP_IN)		\
+-		COND_CODE_1(x,						\
+-			(, INITIALIZER_EP_DATA(hid_int_out, AUTO_EP_OUT)),	\
+-			())						\
++		COND_CODE_0(x,						\
++			(),						\
++			(, INITIALIZER_EP_DATA(hid_int_out, AUTO_EP_OUT)))	\
+ 	}
+ 
+ static void hid_interface_config(struct usb_desc_header *head,

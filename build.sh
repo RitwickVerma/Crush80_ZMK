@@ -115,6 +115,10 @@ cp -r "$REPO_DIR/zmk/include/"* "$WORKSPACE_DIR/zmk/include/" 2>/dev/null || tru
 mkdir -p "$WORKSPACE_DIR/zmk/src/rainy_rgb" "$WORKSPACE_DIR/zmk/src/behaviors"
 cp -r "$REPO_DIR/zmk/src/rainy_rgb/"* "$WORKSPACE_DIR/zmk/src/rainy_rgb/"
 cp -r "$REPO_DIR/zmk/src/behaviors/"* "$WORKSPACE_DIR/zmk/src/behaviors/"
+# VIA: regenerate the keyboard definition from the board DTS, then sync
+python3 "$REPO_DIR/scripts/gen_via_def.py" > /dev/null
+mkdir -p "$WORKSPACE_DIR/zmk/src/via"
+cp -r "$REPO_DIR/zmk/src/via/"* "$WORKSPACE_DIR/zmk/src/via/"
 mkdir -p "$WORKSPACE_DIR/zmk/dts" "$WORKSPACE_DIR/zmk/dts/bindings/behaviors"
 cp "$REPO_DIR/zmk/dts/rainy_rgb.dtsi" "$WORKSPACE_DIR/zmk/dts/"
 cp -r "$REPO_DIR/zmk/dts/bindings/behaviors/"* "$WORKSPACE_DIR/zmk/dts/bindings/behaviors/"

@@ -65,6 +65,15 @@ if(CONFIG_OPENRGB)
   zephyr_library_sources(src/openrgb.c)
 endif()
 
+if(CONFIG_VIA)
+  zephyr_library_named(via)
+  zephyr_library_include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/via
+    ${ZEPHYR_BASE}/../zmk-src/app/include
+  )
+  zephyr_library_sources(src/via/via.c src/via/via_xlat.c)
+endif()
+
 if(CONFIG_ZMK_BLE)
   zephyr_library_named(crush80_ble_name)
   zephyr_library_sources(src/crush80_ble_name.c)

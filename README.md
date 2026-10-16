@@ -39,7 +39,8 @@ opening it.
 - **OpenRGB**: direct per-LED control from [OpenRGB](https://openrgb.org) over a
   raw HID interface (QMK OpenRGB protocol), so the keyboard joins your desktop
   lighting. [Setup](docs/openrgb.md).
-- **ZMK Studio**: remap keys live from the browser over Bluetooth.
+- **Live remapping**: [VIA](docs/via.md) over USB, or ZMK Studio from the
+  browser over Bluetooth.
 - **One-cable install** from the stock firmware, via its own update protocol.
 - **Safe updates**: MCUboot's USB recovery plus `update.sh` flash in about 11
   seconds, and a bad image never boots.
@@ -87,21 +88,24 @@ cabled one gets nothing: press Fn+4 for USB. The choice is saved.
 
 The keymap is [`config/crush80.keymap`](config/crush80.keymap). Ways to change it:
 
-- **[keymap-editor](https://nickcoutsos.github.io/keymap-editor/)** (graphical,
-  covers hold-taps, combos and macros): in Chrome or Edge choose the
-  *File System* source and import `config/crush80.keymap`. When it asks to
-  identify the keyboard, pick *Custom...* and paste the contents of
-  `config/info.json` (the layout; on Linux `wl-copy < config/info.json`). It
-  rewrites the keymap when saving, so check `git diff` (comments may be
-  dropped), then flash:
-  `python3 scripts/force_recovery.py`, replug USB, `bash update.sh --build`.
-- Edit the file by hand, or point `CRUSH80_KEYMAP` at your own file.
-- Remap live in
-[ZMK Studio](https://zmk.studio): open it in Chrome or Edge (it connects over
-Web Bluetooth), connect to the keyboard, then press Fn+F12 to unlock. Changes
-are saved on the keyboard. Studio can also add up to three new layers. Combos,
-macros and hold-tap timings are not editable in Studio; change those in the
-keymap file and reflash.
+- **[VIA](docs/via.md)** (USB): edit keys and layers at
+  [usevia.app](https://usevia.app) after loading `config/via.json` once;
+  ZMK-only keys (Bluetooth, RGB, output) are under *Special*. Macros, combos
+  and hold-tap timings are not available there.
+- **[ZMK Studio](https://zmk.studio)** (Bluetooth): open it in Chrome or Edge,
+  connect to the keyboard, then press Fn+F12 to unlock. Studio can also add up to
+  three new layers. Combos, macros and hold-tap timings are not editable there
+  either.
+- **The keymap file**: edit it, or point `CRUSH80_KEYMAP` at your own file, then
+  reflash with `python3 scripts/force_recovery.py`, replug USB,
+  `bash update.sh --build`. This is the only way to change combos, macros,
+  hold-taps and home-row mods. `config/info.json` describes the layout for
+  [keymap-editor](https://nickcoutsos.github.io/keymap-editor/), which has not
+  been tried with this board.
+
+VIA and Studio edit the same stored keymap: a change in one shows in the other.
+`config/crush80.keymap` is what the keyboard falls back to when that stored
+keymap is reset.
 
 ## Inside the keyboard
 
