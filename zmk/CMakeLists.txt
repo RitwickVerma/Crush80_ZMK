@@ -71,7 +71,7 @@ if(CONFIG_VIA)
     ${CMAKE_CURRENT_SOURCE_DIR}/src/via
     ${ZEPHYR_BASE}/../zmk-src/app/include
   )
-  zephyr_library_sources(src/via/via.c src/via/via_xlat.c)
+  zephyr_library_sources(src/via/via.c src/via/via_xlat.c src/via/via_macro.c)
 endif()
 
 if(CONFIG_ZMK_BLE)

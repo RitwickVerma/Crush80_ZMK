@@ -120,7 +120,7 @@ python3 "$REPO_DIR/scripts/gen_via_def.py" > /dev/null
 mkdir -p "$WORKSPACE_DIR/zmk/src/via"
 cp -r "$REPO_DIR/zmk/src/via/"* "$WORKSPACE_DIR/zmk/src/via/"
 mkdir -p "$WORKSPACE_DIR/zmk/dts" "$WORKSPACE_DIR/zmk/dts/bindings/behaviors"
-cp "$REPO_DIR/zmk/dts/rainy_rgb.dtsi" "$WORKSPACE_DIR/zmk/dts/"
+cp "$REPO_DIR/zmk/dts/rainy_rgb.dtsi" "$REPO_DIR/zmk/dts/via_macro.dtsi" "$WORKSPACE_DIR/zmk/dts/"
 cp -r "$REPO_DIR/zmk/dts/bindings/behaviors/"* "$WORKSPACE_DIR/zmk/dts/bindings/behaviors/"
 
 # Sync conf files

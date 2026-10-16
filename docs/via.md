@@ -30,16 +30,22 @@ with VIA's own definition validator (`@the-via/reader`).
   output, RGB controls, battery level and Studio unlock appear as VIA custom
   keycodes (`BT1`, `OUT`, `RGBEFF`, ...) in the **Special** tab. The list is
   `zmk/src/via/custom_keycodes.def`.
+- **Macros**: sixteen, `M0`-`M15`, edited in VIA's *Macros* tab and assigned like
+  any key. They hold 1 KB in total, are saved to flash, and play text (US
+  layout), single taps, key down/up and delays, with the timing of ZMK's own
+  macros (30 ms taps, 15 ms between actions). A macro already playing is not
+  restarted; saving macros stops it and releases any held key. ZMK Studio shows
+  them as the *VIA Macro* behavior with a number.
 - **Key tester**, once enabled (below).
 
 Edits apply at once and are saved to flash five seconds after the last one.
 
 ## What does not
 
-Macros, lighting menus and encoders are not available. Lighting is controlled
-with the Fn keys and OpenRGB; combos and hold-taps stay in
-`config/crush80.keymap`. For macros, tap dance and combos live in a GUI, VIA is
-the wrong tool: use the keymap file.
+Lighting menus and encoders are not available. Lighting is controlled with the
+Fn keys and OpenRGB; combos, tap dance and hold-taps stay in
+`config/crush80.keymap`. Macros are plain key sequences: they cannot run other
+behaviors (layer changes, Bluetooth) or branch.
 
 A key that uses a ZMK behavior VIA cannot express (home-row mods, custom
 hold-taps, `&sk`, ...) shows as the **ZMK** placeholder key. Leave it alone and
@@ -72,7 +78,8 @@ packet length, so this assumes the browser sends VIA's packets at their real
 | File | |
 |---|---|
 | `zmk/src/via/via.c` | USB interface, VIA commands, key tester, keymap access |
-| `zmk/src/via/via_xlat.c` | VIA keycode <-> ZMK binding |
+| `zmk/src/via/via_xlat.c` | VIA keycode <-> ZMK binding, ASCII to key |
+| `zmk/src/via/via_macro.c` | macro buffer, flash storage, the `&vmacro` behavior |
 | `scripts/gen_via_def.py` | builds `config/via.json` and `via_def.h` from `crush80.dts` |
 | `patches/zephyr/0013-...` | third raw HID instance in Zephyr's USB HID class |
 

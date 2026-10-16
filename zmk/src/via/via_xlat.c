@@ -113,6 +113,8 @@ uint16_t vk_to_qmk(const struct vk_binding *b) {
         return b->p1 < VK_QMK_MAX_LAYER ? QMK_TOGGLE | b->p1 : PLACEHOLDER;
     case VK_TO:
         return b->p1 < VK_QMK_MAX_LAYER ? QMK_TO | b->p1 : PLACEHOLDER;
+    case VK_MACRO:
+        return b->p1 < VK_MACRO_COUNT ? VK_QMK_MACRO0 + b->p1 : PLACEHOLDER;
     case VK_LT:
         if (b->p1 < 16 && kc_to_qmk(b->p2, &key, &mods) && mods == 0 && key >= QMK_KEY_MIN &&
             key <= QMK_KEY_MAX && is_basic_key(key)) {
@@ -193,12 +195,81 @@ bool vk_from_qmk(uint16_t qmk, struct vk_binding *out) {
         out->p1 = qmk - QMK_TOGGLE;
         return true;
     }
+    if (qmk >= VK_QMK_MACRO0 && qmk < VK_QMK_MACRO0 + VK_MACRO_COUNT) {
+        out->beh = VK_MACRO;
+        out->p1 = qmk - VK_QMK_MACRO0;
+        return true;
+    }
     if (qmk >= VK_QMK_KB0 && qmk < PLACEHOLDER) {
         unsigned i = qmk - VK_QMK_KB0;
 
         out->beh = custom[i].beh;
         out->p1 = custom[i].p1;
         out->p2 = custom[i].p2;
+        return true;
+    }
+    return false;
+}
+
+bool vk_ascii_to_usage(char c, uint8_t *usage, bool *shift) {
+    static const char shifted_digits[] = ")!@#$%^&*(";   /* 0-9 */
+    static const struct { char plain, shifted; uint8_t usage; } punct[] = {
+        {'-', '_', 0x2D}, {'=', '+', 0x2E}, {'[', '{', 0x2F}, {']', '}', 0x30}, {'\\', '|', 0x31},
+        {';', ':', 0x33}, {'\'', '"', 0x34}, {'`', '~', 0x35}, {',', '<', 0x36}, {'.', '>', 0x37},
+        {'/', '?', 0x38},
+    };
+
+    *shift = false;
+    if (c >= 'a' && c <= 'z') {
+        *usage = 0x04 + (c - 'a');
+        return true;
+    }
+    if (c >= 'A' && c <= 'Z') {
+        *usage = 0x04 + (c - 'A');
+        *shift = true;
+        return true;
+    }
+    if (c >= '1' && c <= '9') {
+        *usage = 0x1E + (c - '1');
+        return true;
+    }
+    if (c == '0') {
+        *usage = 0x27;
+        return true;
+    }
+    for (unsigned i = 0; i < sizeof(shifted_digits) - 1; i++) {
+        if (c == shifted_digits[i]) {
+            *usage = i ? 0x1D + i : 0x27;
+            *shift = true;
+            return true;
+        }
+    }
+    for (unsigned i = 0; i < sizeof(punct) / sizeof(punct[0]); i++) {
+        if (c == punct[i].plain || c == punct[i].shifted) {
+            *usage = punct[i].usage;
+            *shift = c == punct[i].shifted;
+            return true;
+        }
+    }
+    switch (c) {
+    case '\n':
+    case '\r':
+        *usage = 0x28;
+        return true;
+    case 0x1B:
+        *usage = 0x29;
+        return true;
+    case 0x08:
+        *usage = 0x2A;
+        return true;
+    case '\t':
+        *usage = 0x2B;
+        return true;
+    case ' ':
+        *usage = 0x2C;
+        return true;
+    case 0x7F:
+        *usage = 0x4C;
         return true;
     }
     return false;

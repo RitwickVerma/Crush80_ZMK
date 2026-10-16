@@ -22,6 +22,7 @@ enum vk_beh {
     VK_OUT,    /* &out */
     VK_RGB,    /* &rgb */
     VK_STUDIO, /* &studio_unlock */
+    VK_MACRO,  /* &vmacro: p1 = macro number 0-15 */
     VK_OTHER,  /* any behavior VIA cannot represent */
 };
 
@@ -32,6 +33,8 @@ struct vk_binding {
 };
 
 #define VK_QMK_KB0 0x7E00 /* first custom keycode */
+#define VK_QMK_MACRO0 0x7700 /* M0; M0-M15 are 0x7700-0x770F */
+#define VK_MACRO_COUNT 16
 #define VK_QMK_MAX_LAYER 32
 
 /* Number of custom keycodes (custom_keycodes.def), including the placeholder. */
@@ -40,6 +43,10 @@ extern const uint8_t vk_custom_count;
 /* VIA keycode for a ZMK binding. Anything with no equivalent maps to the
  * placeholder custom keycode, never to a wrong key. */
 uint16_t vk_to_qmk(const struct vk_binding *b);
+
+/* The US-layout key that types an ASCII character, as VIA's macros expect:
+ * HID keyboard usage and whether Shift is held. False for characters with no key. */
+bool vk_ascii_to_usage(char c, uint8_t *usage, bool *shift);
 
 /* ZMK binding for a VIA keycode. False if ZMK cannot express it (the caller
  * leaves the key unchanged). The placeholder is not writable. */
