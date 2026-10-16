@@ -31,6 +31,10 @@
 
 #include "rainy_rgb/engine.h"
 #include "rainy_rgb/effects.h"
+#include "rainy_rgb/led_map.h"   /* RRGB_KEY_LED_COUNT, rrgb_led_xy */
+#if IS_ENABLED(CONFIG_VIA)
+#include "via/via.h"
+#endif
 #include "rainy_rgb/led_map.h"
 
 LOG_MODULE_REGISTER(openrgb, CONFIG_LOG_DEFAULT_LEVEL);
@@ -57,6 +61,7 @@ enum {
     RSP_FAILURE        = 25,
     RSP_SUCCESS        = 50,
     RSP_END_OF_MESSAGE = 100,
+    RSP_UNHANDLED      = 0xFF, /* QMK/VIA id_unhandled */
 };
 
 /* QMK OpenRGB mode enum values (what we advertise in GET_ENABLED_MODES). */
@@ -144,12 +149,15 @@ static const struct hid_ops openrgb_ops = {
 /* Send a 64-byte response.  response[63] carries END_OF_MESSAGE. */
 static void openrgb_send(uint8_t *response) {
     response[OPENRGB_EP_SIZE - 1] = RSP_END_OF_MESSAGE;
-    if (k_sem_take(&openrgb_in_sem, K_MSEC(50)) == 0) {
-        int err = hid_int_ep_write(openrgb_dev, response, OPENRGB_EP_SIZE, NULL);
-        if (err) {
-            k_sem_give(&openrgb_in_sem);
-        }
-        /* on success the sem is given back by in_ready_cb */
+    /* A bus reset drops an in-flight IN transfer without calling
+     * in_ready_cb, so a timeout here means the token was lost, not that a
+     * transfer is still pending: write anyway. A successful write gives the
+     * token back through in_ready_cb, which resynchronises the semaphore. */
+    bool have_token = k_sem_take(&openrgb_in_sem, K_MSEC(50)) == 0;
+    int err = hid_int_ep_write(openrgb_dev, response, OPENRGB_EP_SIZE, NULL);
+
+    if (err && have_token) {
+        k_sem_give(&openrgb_in_sem);
     }
 }
 
@@ -185,6 +193,18 @@ static void cmd_get_mode_info(uint8_t *rsp) {
     struct rrgb_persist p;
     rrgb_get_persist(&p);
 
+    /* Fn+RGB on the keyboard leaves Direct mode behind the host's back:
+     * report the effect that is actually running. */
+    if (openrgb_mode == OPENRGB_MODE_DIRECT && !rrgb_host_active()) {
+        openrgb_mode = 1;
+        for (uint8_t m = 1; m < OPENRGB_MODE_DIRECT; m++) {
+            if (mode_to_effect[m] == p.effect) {
+                openrgb_mode = m;
+                break;
+            }
+        }
+    }
+
     rsp[1] = openrgb_mode;
     rsp[2] = p.speed;
     rsp[3] = p.hue;
@@ -192,46 +212,41 @@ static void cmd_get_mode_info(uint8_t *rsp) {
     rsp[5] = p.val;
 }
 
-/* HID usage code for each keylight LED (0-87), aligned with crush80.keymap's
- * base-layer bindings in row-major order.  OpenRGB uses this byte to look up a
- * key name (e.g. 0x04 = "A").  Consumer/media keys carry their HID consumer
- * usage; keys bound to non-key behaviors (&tog, &mo) and the two physically
- * unbound LEDs report 0 (no name). */
-static const uint8_t led_keycodes[88] = {
-    /* Row 0: F-row */
-    0x29, 0x70, 0x6F, 0x3C, 0x3D, 0x3E, 0x3F, 0xB6, 0xCD, 0xB5, 0xE2, 0xEA, 0xE9, 0x46, 0x00, 0x48,
-    /* Row 1: number row + nav cluster */
-    0x35, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x2D, 0x2E, 0x2A, 0x49, 0x4A, 0x4B,
-    /* Row 2: QWERTY + nav cluster */
-    0x2B, 0x14, 0x1A, 0x08, 0x15, 0x17, 0x1C, 0x18, 0x0C, 0x12, 0x13, 0x2F, 0x30, 0x31, 0x4C, 0x4D, 0x4E,
-    /* Row 3: home row (home-row mods report their tap key) */
-    0x39, 0x04, 0x16, 0x07, 0x09, 0x0A, 0x0B, 0x0D, 0x0E, 0x0F, 0x33, 0x34, 0x28,
-    /* Row 4: shift row (14 physical LEDs, 13 bound) */
-    0xE1, 0x1D, 0x1B, 0x06, 0x19, 0x05, 0x11, 0x10, 0x36, 0x37, 0x38, 0xE5, 0x52, 0x00,
-    /* Row 5: bottom row */
-    0xE0, 0xE3, 0xE1, 0x2C, 0x2B, 0x00, 0xE4, 0x50, 0x51, 0x4F,
-    /* Row 6: extra LED */
-    0x00,
+/* HID usage code for each key LED (0-91), indexed by LED slot. Built from
+ * crush80.keymap's base-layer bindings through pos_to_led in rainy_rgb/led_map.c
+ * (the four extra slots under Caps Lock, Enter and Space repeat that key's
+ * code). OpenRGB uses this byte to look up a key name (e.g. 0x04 = "A");
+ * Fn reports 0 (no name). */
+static const uint8_t led_keycodes[RRGB_KEY_LED_COUNT] = {
+    0x29, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x40, 0x41, 0x42, 0x43, 0x44,
+    0x45, 0x68, 0x46, 0x47, 0x48, 0x35, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23,
+    0x24, 0x25, 0x26, 0x27, 0x2D, 0x2E, 0x2A, 0x49, 0x4A, 0x4B, 0x2B, 0x14,
+    0x1A, 0x08, 0x15, 0x17, 0x1C, 0x18, 0x0C, 0x12, 0x13, 0x2F, 0x30, 0x31,
+    0x4C, 0x4D, 0x4E, 0x39, 0x39, 0x04, 0x16, 0x07, 0x09, 0x0A, 0x0B, 0x0D,
+    0x0E, 0x0F, 0x33, 0x34, 0x28, 0x28, 0xE1, 0x1D, 0x1B, 0x06, 0x19, 0x05,
+    0x11, 0x10, 0x36, 0x37, 0x38, 0xE5, 0x52, 0xE0, 0xE3, 0xE2, 0x2C, 0x2C,
+    0x2C, 0xE6, 0x00, 0xE7, 0xE4, 0x50, 0x51, 0x4F,
 };
 
 static void cmd_get_led_info(uint8_t *rsp, const uint8_t *data) {
     uint8_t first = data[1];
     uint8_t count = data[2];
 
+    /* 7 bytes per LED after the command byte: at most 8 fit in 64 bytes.
+     * Capping the loop (not just skipping) keeps o from wrapping. */
+    count = MIN(count, (OPENRGB_EP_SIZE - 8) / 7 + 1);
+
     for (uint8_t i = 0; i < count; i++) {
         uint16_t led = (uint16_t)first + i;
-        uint8_t o = (uint8_t)(1 + i * 7);
+        uint8_t o = 1 + i * 7;
 
-        if (led >= OPENRGB_LED_COUNT || o > (OPENRGB_EP_SIZE - 8)) {
-            /* Out of range or would overrun the 64-byte report. */
-            if (o <= OPENRGB_EP_SIZE - 4) {
-                rsp[o + 2] = RSP_FAILURE; /* flags position */
-            }
+        if (led >= OPENRGB_LED_COUNT) {
+            rsp[o + 2] = RSP_FAILURE; /* flags position */
             continue;
         }
 
         const struct led_xy *xy = &rrgb_led_xy[led];
-        uint8_t flags = (led < 88) ? 0x04 : 0x02; /* keylight | underglow */
+        uint8_t flags = (led < RRGB_KEY_LED_COUNT) ? 0x04 : 0x02; /* keylight | underglow */
 
         rsp[o + 0] = xy->x;
         rsp[o + 1] = xy->y;
@@ -239,7 +254,7 @@ static void cmd_get_led_info(uint8_t *rsp, const uint8_t *data) {
         rsp[o + 3] = 0; /* r (read back by OpenRGB; we have no per-LED cache) */
         rsp[o + 4] = 0; /* g */
         rsp[o + 5] = 0; /* b */
-        rsp[o + 6] = (led < 88) ? led_keycodes[led] : 0; /* keycode */
+        rsp[o + 6] = (led < RRGB_KEY_LED_COUNT) ? led_keycodes[led] : 0; /* keycode */
     }
 }
 
@@ -328,9 +343,15 @@ static void cmd_set_single_led(uint8_t *rsp, const uint8_t *data) {
 
 /* Bulk LED write: data[1]=first, data[2]=count, then RGB triples. No response
  * (matches the canonical firmware — throughput beats acking here). */
-static void cmd_set_leds(const uint8_t *data) {
+static void cmd_set_leds(const uint8_t *data, uint32_t len) {
+    if (len < 3) {
+        return;
+    }
+
     uint16_t first = data[1];
-    uint8_t count = data[2];
+    /* The host picks count; only as many triples as the packet holds (20
+     * in 64 bytes) are real data. */
+    uint8_t count = MIN(data[2], (len - 3) / 3);
 
     for (uint8_t i = 0; i < count; i++) {
         uint16_t led = first + i;
@@ -350,8 +371,30 @@ static void openrgb_handle(const uint8_t *data, uint32_t len) {
 
     uint8_t cmd = data[0];
 
+    /* OpenRGB always sends full 64-byte packets. This interface has the same
+     * identity as the VIA one (usage page 0xFF60, usage 0x61; OpenRGB's
+     * detector requires it), so VIA's configurator opens it too, with 32-byte
+     * packets. Serve those as VIA, so both entries it lists work: rejecting
+     * this one makes the VIA app mislabel the other (it indexes its filtered
+     * device list with the unfiltered one's positions). */
+    if (len < OPENRGB_EP_SIZE) {
+        memset(response, 0, sizeof(response));
+#if IS_ENABLED(CONFIG_VIA)
+        if (len == VIA_PACKET_SIZE) {
+            memcpy(response, data, VIA_PACKET_SIZE);
+            via_handle_packet(response);
+            openrgb_send(response);
+            return;
+        }
+#endif
+        response[0] = RSP_UNHANDLED;
+        response[1] = cmd;
+        openrgb_send(response);
+        return;
+    }
+
     if (cmd == CMD_SET_LEDS) {
-        cmd_set_leds(data);
+        cmd_set_leds(data, len);
         return; /* no response */
     }
 

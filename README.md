@@ -31,7 +31,7 @@ opening it.
 
 ## Features
 
-- **Full keyboard over USB and Bluetooth LE**: 86-key ANSI matrix, three
+- **Full keyboard over USB and Bluetooth LE**: 88-key ANSI matrix (F13 included), three
   Bluetooth profiles, USB/BLE output switching, deep sleep with key wakeup.
 - **154 per-key RGB LEDs**: WS2812-class chain driven by SPI + DMA, with the
   `rainy_rgb` engine (12 effects, reactive ripples and heatmap, Caps Lock and
@@ -39,7 +39,8 @@ opening it.
 - **OpenRGB**: direct per-LED control from [OpenRGB](https://openrgb.org) over a
   raw HID interface (QMK OpenRGB protocol), so the keyboard joins your desktop
   lighting. [Setup](docs/openrgb.md).
-- **ZMK Studio**: remap keys live from the browser over Bluetooth.
+- **Live remapping**: [VIA](docs/via.md) over USB, or ZMK Studio from the
+  browser over Bluetooth.
 - **One-cable install** from the stock firmware, via its own update protocol.
 - **Safe updates**: MCUboot's USB recovery plus `update.sh` flash in about 11
   seconds, and a bad image never boots.
@@ -77,13 +78,32 @@ Full instructions, including recovery and going back to stock:
 | F1 / F2 | Screen brightness | 4 | USB output |
 | F3 / F4 / F5 | Previous / play / next | 5 | Toggle USB / Bluetooth |
 | F6 / F7 / F8 | Mute / volume | Ins | Clear Bluetooth pairing |
-| F12 | Unlock ZMK Studio | M | Mac mode |
+| F12 | Unlock ZMK Studio | M | Mac mode: Win/Alt become Option/Cmd |
 | Backspace | RGB on / off | ScrLk | Native (pass-through) layer |
 | \ or Enter | Next RGB effect | ↑ / ↓ | RGB brightness |
 
-The board keymap is [`zmk/boards/crush80/crush80.keymap`](zmk/boards/crush80/crush80.keymap).
-Edit it directly, point `CRUSH80_KEYMAP` at your own file, or remap live in
-[ZMK Studio](https://zmk.studio).
+Keys go to one output at a time. If the cable is in one computer while
+Bluetooth is connected to another, typing goes to the Bluetooth host and the
+cabled one gets nothing: press Fn+4 for USB. The choice is saved.
+
+The keymap is [`config/crush80.keymap`](config/crush80.keymap). Ways to change it:
+
+- **[VIA](docs/via.md)** (USB): edit keys, layers and macros at
+  [usevia.app](https://usevia.app) after loading `config/via.json` once;
+  ZMK-only keys (Bluetooth, RGB, output) are under *Special*. Combos and
+  hold-tap timings are not available there.
+- **[ZMK Studio](https://zmk.studio)** (Bluetooth): open it in Chrome or Edge,
+  connect to the keyboard, then press Fn+F12 to unlock. Studio can also add up to
+  three new layers. Combos, macros and hold-tap timings are not editable there
+  either.
+- **The keymap file**: edit it, or point `CRUSH80_KEYMAP` at your own file, then
+  reflash with `python3 scripts/force_recovery.py`, replug USB,
+  `bash update.sh --build`. This is the only way to change combos, hold-taps
+  and home-row mods.
+
+VIA and Studio edit the same stored keymap: a change in one shows in the other.
+`config/crush80.keymap` is what the keyboard falls back to when that stored
+keymap is reset.
 
 ## Inside the keyboard
 
@@ -103,14 +123,17 @@ Pinout, LED chain, flash map and stock-firmware notes:
 | Per-key RGB, OpenRGB (Direct mode, 154 LEDs) | Working |
 | Updates over USB (`update.sh` / `dfu.py`) | Working: 290 KB in 11 s |
 | ZMK Studio | Over Bluetooth (the USB serial port was dropped so OpenRGB sees the keyboard) |
+| VIA (keys, layers, 16 macros) | Working over USB, checked against the real app on Linux; not yet tried on macOS or Windows ([docs/via.md](docs/via.md)) |
 | Fn+Esc → bootloader | **Known issue**: reboots into the app instead. Use `scripts/force_recovery.py` ([details](docs/flashing.md#update-a-keyboard-that-runs-zmk)) |
 | 2.4 GHz dongle | Not supported: proprietary protocol, no open implementation exists |
 | Battery percentage | Reads; scaling not yet calibrated on this board |
+| Timers | Run about 6% fast: 1000 ms of firmware time is about 940 ms real (measured against the host over 20 s), so tapping terms, macro delays and idle timeouts are that much shorter. The 32 kHz clock is calibrated at boot (`soc.c`) yet still reads fast; cause not found |
 
 ## Repository layout
 
 ```
-zmk/              ZMK module: board (DTS, keymap), drivers (USB, BLE, LED strip,
+config/           the keymap (crush80.keymap) and the generated VIA definition (via.json)
+zmk/              ZMK module: board (DTS), drivers (USB, BLE, LED strip,
                   battery, watchdog), rainy_rgb engine, OpenRGB, flash management
 conf/             build configuration (app, MCUboot, install bridge)
 patches/          fixes to Zephyr, ZMK, MCUboot and hal_telink, applied by setup.sh

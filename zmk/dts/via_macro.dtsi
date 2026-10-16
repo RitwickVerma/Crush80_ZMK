@@ -1,0 +1,9 @@
+/ {
+    behaviors {
+        vmacro: via_macro {
+            compatible = "crush80,behavior-via-macro";
+            #binding-cells = <1>;
+            display-name = "VIA Macro";
+        };
+    };
+};

@@ -47,7 +47,8 @@ leaves Direct mode and hands the LEDs back to the built-in effects.
 ## Why it needs USB interface 1
 
 OpenRGB's QMK detector only looks at USB interface 1, where QMK keyboards put
-their raw HID interface. The firmware therefore exposes exactly two USB
-interfaces: the keyboard (0) and the raw HID (1). That is also why ZMK Studio
-runs over Bluetooth rather than a USB serial port: an extra USB interface in
-front would push the raw HID off interface 1 and OpenRGB would no longer find it.
+their raw HID interface. The firmware therefore puts the keyboard on interface
+0 and OpenRGB on interface 1; the only interface after them is the VIA raw HID
+(2, see [via.md](via.md)). That is also why ZMK Studio runs over Bluetooth
+rather than a USB serial port: an extra USB interface in front would push the
+raw HID off interface 1 and OpenRGB would no longer find it.

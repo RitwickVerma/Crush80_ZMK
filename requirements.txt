@@ -1,5 +1,5 @@
 # Python dependencies for Crush 80 ZMK firmware tooling
-# Install with: pip3 install --break-system-packages -r requirements.txt
+# Installed by setup.sh into the workspace venv (WORKSPACE/.venv).
 
 # Zephyr build tool. Zephyr v4.1 does not configure with CMake 4.x.
 west>=1.5.0
@@ -22,3 +22,6 @@ hidapi>=0.14.0
 # Serial SMP + CBOR for the install bridge (scripts/flash_combined.py)
 pyserial
 cbor2
+
+# Bluetooth recovery (scripts/force_recovery.py): Linux only, talks to BlueZ
+dbus-fast; sys_platform == "linux"

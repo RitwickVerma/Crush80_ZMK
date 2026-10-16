@@ -62,7 +62,7 @@ if [[ "$OS" == "Darwin" ]]; then
 else
     sudo apt-get update -qq
     sudo apt-get install -y -q \
-        git cmake ninja-build python3-pip wget xz-utils \
+        git cmake ninja-build python3-pip python3-venv wget curl xz-utils \
         libusb-1.0-0-dev libhidapi-dev file protobuf-compiler \
         device-tree-compiler
 fi
@@ -70,32 +70,16 @@ echo "    System packages: OK"
 
 # ── 2. Python tools ─────────────────────────────────────────────────────────
 echo "[2/6] Installing Python tools..."
-if [[ "$OS" == "Darwin" ]]; then
-    pip3 install -r "$REPO_DIR/requirements.txt"
-else
-    pip3 install --break-system-packages -r "$REPO_DIR/requirements.txt"
+# A venv in the workspace: Homebrew and Debian/Ubuntu Pythons refuse
+# system-wide pip installs (PEP 668), and build.sh puts this venv first on PATH.
+mkdir -p "$WORKSPACE_DIR"
+if [[ ! -x "$WORKSPACE_DIR/.venv/bin/python" ]]; then
+    python3 -m venv "$WORKSPACE_DIR/.venv"
 fi
-echo "    Python tools installed."
-
-# Ensure west is on PATH
-if ! command -v west &>/dev/null; then
-    WEST_BIN="$(python3 -c 'import site; print(site.getusersitepackages().replace("lib/python", "bin").split("/lib")[0] + "/bin")' 2>/dev/null || echo "$HOME/.local/bin")"
-    if [[ -x "$WEST_BIN/west" ]]; then
-        export PATH="$WEST_BIN:$PATH"
-    elif [[ -x "$HOME/.local/bin/west" ]]; then
-        export PATH="$HOME/.local/bin:$PATH"
-    elif [[ -x "$(python3 -m site --user-base)/bin/west" ]]; then
-        PATH="$(python3 -m site --user-base)/bin:$PATH"
-        export PATH
-    fi
-fi
-
-if command -v west &>/dev/null; then
-    echo "    west: $(west --version)"
-else
-    echo "    WARNING: west not found on PATH. You may need to add its bin dir to PATH."
-    echo "    Try: export PATH=\"\$(python3 -m site --user-base)/bin:\$PATH\""
-fi
+"$WORKSPACE_DIR/.venv/bin/pip" install -q -r "$REPO_DIR/requirements.txt"
+export PATH="$WORKSPACE_DIR/.venv/bin:$PATH"
+echo "  Python tools installed in $WORKSPACE_DIR/.venv"
+echo "  west: $(west --version)"
 
 # ── 3. Zephyr SDK ───────────────────────────────────────────────────────────
 echo "[3/6] Zephyr SDK $SDK_VERSION ($SDK_PLATFORM)..."
@@ -144,11 +128,7 @@ fi
 # ── 6. Zephyr Python requirements + cmake registration ───────────────────────
 echo "[6/6] Zephyr Python requirements and cmake package..."
 if [[ -f "$WORKSPACE_DIR/zephyr/scripts/requirements.txt" ]]; then
-    if [[ "$OS" == "Darwin" ]]; then
-        pip3 install -r "$WORKSPACE_DIR/zephyr/scripts/requirements.txt" -q
-    else
-        pip3 install --break-system-packages -r "$WORKSPACE_DIR/zephyr/scripts/requirements.txt" -q
-    fi
+    "$WORKSPACE_DIR/.venv/bin/pip" install -q -r "$WORKSPACE_DIR/zephyr/scripts/requirements.txt"
 fi
 if [[ -f "$WORKSPACE_DIR/zephyr/share/zephyr-package/cmake/zephyr_export.cmake" ]]; then
     cmake -P "$WORKSPACE_DIR/zephyr/share/zephyr-package/cmake/zephyr_export.cmake"

@@ -1,0 +1,3 @@
+description: Plays a macro stored in the VIA macro buffer (M0-M15 in VIA)
+compatible: "crush80,behavior-via-macro"
+include: one_param.yaml

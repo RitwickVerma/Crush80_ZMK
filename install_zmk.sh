@@ -43,14 +43,8 @@ ZMK_VID="1d50"
 ZMK_PID="615e"
 AUTO_YES=0
 
-# Serial port: platform-aware default
-if [[ -n "${SERIAL_PORT:-}" ]]; then
-    :
-elif [[ "$(uname)" == "Darwin" ]]; then
-    SERIAL_PORT=""  # auto-detect below
-else
-    SERIAL_PORT="/dev/ttyACM0"
-fi
+# Serial port: --port / SERIAL_PORT, else auto-detected (find_serial_port)
+SERIAL_PORT="${SERIAL_PORT:-}"
 
 # ── Parse arguments ──────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -61,7 +55,8 @@ while [[ $# -gt 0 ]]; do
         -y|--yes)    AUTO_YES=1; shift ;;
         --help|-h)
             echo "Usage: $0 [-y] [--bridge OTA_IMAGE] [--zmk COMBINED_IMAGE] [--port SERIAL_PORT]"
-            echo "  SERIAL_PORT: /dev/ttyACM0 (Linux) or /dev/cu.usbmodemXXXX (macOS)"
+            echo "  SERIAL_PORT: e.g. /dev/ttyACM0 (Linux) or /dev/cu.usbmodemXXXX (macOS);"
+            echo "               default: auto-detect the bridge (USB 1d50:615e)"
             exit 0 ;;
         *) die "Unknown option: $1" ;;
     esac
@@ -69,7 +64,7 @@ done
 
 # ── Validate prerequisites ───────────────────────────────────
 for f in "$BRIDGE_IMAGE" "$ZMK_IMAGE"; do
-    [[ -f "$f" ]] || die "Required file not found: $f (run: bash build.sh)"
+    [[ -f "$f" ]] || die "Required file not found: $f (run: bash build.sh --build-mcuboot)"
 done
 
 
@@ -78,8 +73,10 @@ check_usb() {
     if command -v lsusb &>/dev/null; then
         lsusb -d "$vid:$pid" >/dev/null 2>&1
     elif [[ "$(uname)" == "Darwin" ]]; then
-        # macOS: use system_profiler to check for USB device
-        system_profiler SPUSBDataType 2>/dev/null | grep -qi "0x${vid}.*0x${pid}" 2>/dev/null
+        # macOS: system_profiler prints "Product ID: 0x..." and, on the next
+        # line, "Vendor ID: 0x...", so match the pair across lines.
+        system_profiler SPUSBDataType 2>/dev/null \
+            | grep -i -A2 "Product ID: 0x${pid}" | grep -qi "Vendor ID: 0x${vid}"
     else
         return 1
     fi
@@ -134,15 +131,24 @@ wait_for_serial() {
 }
 
 find_serial_port() {
-    # Linux: /dev/ttyACM*
-    for dev in /dev/ttyACM0 /dev/ttyACM1 /dev/ttyUSB0; do
-        if [[ -e "$dev" ]]; then echo "$dev"; return 0; fi
+    # Only ever return the bridge's own port: flash commands sent to some other
+    # serial device would at best fail and at worst do damage.
+    local dev
+    if [[ "$(uname)" == "Darwin" ]]; then
+        # macOS names ports by location, not ID; accept a single candidate only.
+        local ports=(/dev/cu.usbmodem*)
+        if [[ ${#ports[@]} -eq 1 && -e "${ports[0]}" ]]; then echo "${ports[0]}"; fi
+        return 0
+    fi
+    for dev in /dev/ttyACM*; do
+        [[ -e "$dev" ]] || continue
+        local props
+        props="$(udevadm info -q property -n "$dev" 2>/dev/null)"
+        if grep -qx "ID_VENDOR_ID=${ZMK_VID}" <<<"$props" && grep -qx "ID_MODEL_ID=${ZMK_PID}" <<<"$props"; then
+            echo "$dev"
+            return 0
+        fi
     done
-    # macOS: /dev/cu.usbmodem*
-    for dev in /dev/cu.usbmodem*; do
-        if [[ -e "$dev" ]]; then echo "$dev"; return 0; fi
-    done
-    echo ""
 }
 
 # ── Recovery guidance on failure ─────────────────────────────

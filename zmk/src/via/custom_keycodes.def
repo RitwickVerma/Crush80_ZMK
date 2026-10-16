@@ -1,0 +1,33 @@
+/*
+ * ZMK behaviors that have no QMK keycode, offered to VIA as its "custom
+ * keycodes" (QK_KB_0 + index, 0x7E00 + index). One source for two users:
+ * via_xlat.c builds its binding table from it, and scripts/gen_via_def.py
+ * puts the names into the keyboard definition VIA loads. Keep the order:
+ * the index is the keycode, and saved layouts refer to it. At most 256
+ * entries; the last entry is the read-only placeholder for any other binding.
+ *
+ * VK_CUSTOM(name, title, behavior, param1, param2)
+ *   &bt: param1 = command (0 clear, 3 select), param2 = profile
+ *   &out: param1 = 0 toggle, 1 USB, 2 Bluetooth
+ *   &rgb: param1 = rainy_rgb.h action
+ */
+VK_CUSTOM("BT1",    "Select Bluetooth profile 1",   VK_BT,  3, 0)
+VK_CUSTOM("BT2",    "Select Bluetooth profile 2",   VK_BT,  3, 1)
+VK_CUSTOM("BT3",    "Select Bluetooth profile 3",   VK_BT,  3, 2)
+VK_CUSTOM("BT4",    "Select Bluetooth profile 4",   VK_BT,  3, 3)
+VK_CUSTOM("BT5",    "Select Bluetooth profile 5",   VK_BT,  3, 4)
+VK_CUSTOM("BTCLR",  "Clear current Bluetooth profile", VK_BT, 0, 0)
+VK_CUSTOM("USB",    "Send keys over USB",           VK_OUT, 1, 0)
+VK_CUSTOM("BLE",    "Send keys over Bluetooth",     VK_OUT, 2, 0)
+VK_CUSTOM("OUT",    "Toggle USB / Bluetooth output", VK_OUT, 0, 0)
+VK_CUSTOM("RGB",    "RGB on / off",                 VK_RGB, 0, 0)
+VK_CUSTOM("RGBEFF", "Next RGB effect",              VK_RGB, 1, 0)
+VK_CUSTOM("RGBH+",  "RGB hue up",                   VK_RGB, 2, 0)
+VK_CUSTOM("RGBH-",  "RGB hue down",                 VK_RGB, 3, 0)
+VK_CUSTOM("RGBV+",  "RGB brightness up",            VK_RGB, 4, 0)
+VK_CUSTOM("RGBV-",  "RGB brightness down",          VK_RGB, 5, 0)
+VK_CUSTOM("RGBS+",  "RGB speed up",                 VK_RGB, 6, 0)
+VK_CUSTOM("RGBS-",  "RGB speed down",               VK_RGB, 7, 0)
+VK_CUSTOM("BATT",   "Show battery level",           VK_RGB, 8, 0)
+VK_CUSTOM("STUDIO", "Unlock ZMK Studio",            VK_STUDIO, 0, 0)
+VK_CUSTOM("ZMK",    "ZMK behavior VIA cannot edit (leave as is)", VK_OTHER, 0, 0)

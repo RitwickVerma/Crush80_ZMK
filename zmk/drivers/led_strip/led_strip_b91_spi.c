@@ -79,7 +79,7 @@ struct b91_led_strip_config {
  * PSPI master mode on PB7 (MOSI), 6 MHz SPI clock.
  * Each WS2812 bit → 1 SPI byte (8 SPI bits at 6 MHz = 1333ns per WS2812 bit).
  * DMA ch4 transfers the encoded buffer to PSPI TX FIFO.
- * Total frame: 83 LEDs × 24 bits × 1333ns = 2656µs.
+ * Total frame: 154 LEDs × 24 bits × 1333ns = 4928µs.
  * Zero CPU involvement during transfer, zero timing jitter.
  * ======================================================================== */
 
@@ -108,7 +108,7 @@ static uint8_t __aligned(4) spi_buf[NUM_LEDS * WS2812_SPI_BYTES_PER_LED];
 	 (2 << 22))                    /* src width = word */
 
 /* --- Interrupt-driven completion ---
- * The render thread sleeps on this semaphore during the ~2.66 ms DMA transfer
+ * The render thread sleeps on this semaphore during the ~4.9 ms DMA transfer
  * instead of busy-polling B91_PSPI_BUSY, freeing the CPU. The PSPI
  * End-of-Transfer interrupt (PLIC source 23, dedicated to APB SPI — no DMA-IRQ
  * sharing with the BLE blob) gives the semaphore when the last bit is clocked
@@ -189,8 +189,10 @@ static void ws2812_pspi_send(const struct led_rgb *pixels, uint16_t num_pixels)
 	sys_write8(0x00, B91_PSPI_TRANS1);
 
 	/* Sleep until the End-of-Transfer IRQ fires (last bit clocked out),
-	 * yielding the CPU for the whole ~2.66 ms transfer instead of spinning. */
-	if (k_sem_take(&xfer_done_sem, K_MSEC(5)) != 0) {
+	 * yielding the CPU for the whole transfer instead of spinning. The
+	 * timeout scales with the frame: 4/3 us per byte (one byte per WS2812
+	 * bit) plus 2 ms of IRQ latency, about 7 ms for 154 LEDs. */
+	if (k_sem_take(&xfer_done_sem, K_USEC(num_bytes * 4 / 3 + 2000)) != 0) {
 		/* End-IRQ didn't fire this frame — skip it. The next send fully
 		 * re-initializes DMA + clears stale status, so it self-heals. This
 		 * timeout exists only to prevent a permanent render-thread hang. */

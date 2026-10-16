@@ -1,27 +1,33 @@
 # Keymap Reference
 
-Crush80 ZMK firmware keymap — Home Row Mods with layers.
+Two keymaps share the same layer set:
+
+- **Board keymap** (`config/crush80.keymap`, the default build): a
+  standard 80% layout. Nav, ExtNav, Sym, MacNav and MacExtNav are defined but
+  nothing activates them; wire a key to them in the keymap or in ZMK Studio.
+- **Home-row-mods keymap** (`keymaps/example.keymap`, build with
+  `CRUSH80_KEYMAP=keymaps/example.keymap bash build.sh`): adds the triggers
+  below and media keys on the F-row.
 
 ---
 
-## Layer Triggers
+## Layer Triggers (example.keymap)
 
 | Key | Action |
 |-----|--------|
 | W (hold) | Nav layer (or MacNav in Mac mode) |
-| CapsLock (tap) | Escape |
+| CapsLock (tap) | CapsLock |
 | CapsLock (hold) | Sym layer |
 | Apostrophe (hold) | Sym layer |
 | Left of spacebar | Shift |
 | Right of spacebar | Tab |
 | Fn (right bottom) | Fn layer (hold) |
 | Fn + M | Toggle Mac mode |
-| ScrLk position | Toggle Native layer |
-| Shift keys | Normal shift (unchanged) |
+| ScrLk | Toggle Native layer |
 
 ---
 
-## Base Layer
+## Base Layer (example.keymap)
 
 Full Home Row Mods (CAGS order):
 
@@ -31,13 +37,6 @@ Right hand:  J=Shift K=Gui  L=Alt  ;=Ctrl
 ```
 
 F-row sends media keys by default. Hold Fn for F1-F12 + BT/RGB controls.
-
-Bottom row modifiers:
-- Left of spacebar = Shift
-- Right of spacebar = Tab
-- CapsLock = Escape (tap) / Sym layer (hold)
-- Apostrophe = Sym layer (hold) / plain apostrophe (tap)
-- W = Nav layer (hold) / plain w (tap)
 
 ---
 
@@ -185,39 +184,41 @@ Number row: `1 2 3` remain as-is, followed by `$ % ^ & * ( )` shifted symbols.
 
 ## Fn Layer (hold Fn)
 
-F-row becomes actual F1-F12. Additional controls:
+Fn is the top layer, so its shortcuts work in every mode (Mac, Native).
 
-| Key | Action |
-|-----|--------|
-| F1-F3 (number row 1-3) | BT Profile 1/2/3 |
-| 4 (number row) | USB output |
-| 5 (number row) | BT/USB toggle |
-| Backspace | RGB toggle |
-| Ins | BT clear |
-| \ | RGB effect cycle |
-| Enter | RGB effect cycle |
-| Up arrow | RGB brightness up |
-| Down arrow | RGB brightness down |
-| M | Toggle Mac mode (Fn+M) |
+| Key | Board keymap | example.keymap |
+|-----|--------------|----------------|
+| Esc | Bootloader (known issue: see docs/flashing.md) | same |
+| F1-F12 | F1/F2 brightness, F3-F5 prev/play/next, F6-F8 mute/volume, F12 ZMK Studio unlock | actual F1-F12 |
+| Pause | — | ZMK Studio unlock |
+| ScrLk | Toggle Native | — (plain ScrLk toggles Native) |
+| 1 / 2 / 3 | BT profile 1/2/3 | same |
+| 4 | USB output | same |
+| 5 | USB/BT toggle | same |
+| Ins | Clear current BT profile | same |
+| Backspace | RGB on/off | same |
+| \ or Enter | Next RGB effect | same |
+| Up / Down | RGB brightness | same |
+| M | Toggle Mac mode | same |
 
 ---
 
-## Native Layer (toggle ScrLk)
+## Native Layer
 
-Full passthrough with no remapping. All keys send their standard keycodes. Press ScrLk position again to return to Base layer.
+Full passthrough with no remapping, above the Mac layers, so it also bypasses
+Mac mode. Board keymap: Fn+ScrLk on, plain ScrLk off. example.keymap: ScrLk
+toggles it.
 
 ---
 
 ## Mac Mode (toggle Fn+M)
 
-Pressing Fn+M toggles between Base (layer 0) and Mac (layer 6). When in Mac mode, the keyboard uses macOS-appropriate shortcuts in the navigation layers.
+**Board keymap:** the Mac layer is transparent except the modifiers, which move
+to macOS order: Win becomes Option, Alt becomes Cmd, right Alt becomes right
+Cmd (so the row reads Ctrl Opt Cmd Space Cmd).
 
-### Mac Base Layer (layer 6)
-
-Identical to the Base layer except:
-- W (hold) activates **MacNav** (layer 7) instead of Nav (layer 2)
-
-All other keys (HRM, Sym, media, etc.) remain the same.
+**example.keymap:** the Mac layer is transparent except W (hold), which
+activates **MacNav** instead of Nav. Home-row mods and Sym stay as in Base.
 
 ### MacNav Layer (hold W in Mac mode)
 
@@ -258,20 +259,6 @@ Same layout as ExtNav but with macOS shortcuts:
 
 ---
 
-## Wireless Controls
-
-| Combo | Action |
-|-------|--------|
-| Fn + 1 | BT Profile 1 |
-| Fn + 2 | BT Profile 2 |
-| Fn + 3 | BT Profile 3 |
-| Fn + 4 | Force USB output |
-| Fn + 5 | Toggle BT/USB |
-| Fn + Ins | Clear current BT profile |
-| Fn + Bspc | RGB on/off |
-
----
-
 ## Home Row Mod Parameters
 
 | Parameter | Value |
@@ -289,11 +276,12 @@ Same layout as ExtNav but with macOS shortcuts:
 | Index | Name | Activation |
 |-------|------|------------|
 | 0 | Base | Default |
-| 1 | Fn | Hold Fn key |
-| 2 | Nav | Hold W (in Base) |
-| 3 | ExtNav | Hold Space (in Nav) |
-| 4 | Sym | Hold CapsLock or Apostrophe |
-| 5 | Native | Toggle ScrLk |
-| 6 | Mac | Toggle Fn+M |
-| 7 | MacNav | Hold W (in Mac) |
-| 8 | MacExtNav | Hold Space (in MacNav) |
+| 1 | Nav | Hold W (example.keymap) |
+| 2 | ExtNav | Hold Space (in Nav) |
+| 3 | Sym | Hold CapsLock or Apostrophe (example.keymap) |
+| 4 | Mac | Toggle Fn+M |
+| 5 | MacNav | Hold W (in Mac, example.keymap) |
+| 6 | MacExtNav | Hold Space (in MacNav) |
+| 7 | Native | Toggle (see above) |
+| 8 | Fn | Hold Fn; the top real layer |
+| 9-11 | (reserved) | Layers added in ZMK Studio; must stay last |

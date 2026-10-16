@@ -12,7 +12,7 @@
  *   1. Look up buffer address:
  *      riscv32-elf-nm build/zephyr/zephyr.elf | grep boot_diag_buf
  *   2. Read via BDT:
- *      ./reverse/tools/sws_flash.sh sram 0x<addr> 36
+ *      sws_flash.sh sram 0x<addr> 36   (SWS debug tooling, not in this repo)
  *   3. Decode: magic(4) count(1) last(1) rsv(2) stages(28)
  *
  * GPIO heartbeat (if CONFIG_BOOT_DIAG_GPIO=y):

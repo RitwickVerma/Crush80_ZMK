@@ -165,6 +165,8 @@ static int adc_read_channel(uint8_t channel_code)
  * Battery sensor driver (Zephyr sensor API)
  * ======================================================================== */
 
+#define BATTERY_SAMPLES 8
+
 struct b91_battery_config {
 	uint8_t adc_channel;
 	uint16_t div_num;
@@ -190,7 +192,14 @@ static int b91_battery_sample_fetch(const struct device *dev,
 		return -ENOTSUP;
 	}
 
-	int pin_mv = adc_read_channel(cfg->adc_channel);
+	/* Average a few conversions: a single sample swings with LED and radio
+	 * current draw. */
+	int pin_mv = 0;
+
+	for (int i = 0; i < BATTERY_SAMPLES; i++) {
+		pin_mv += adc_read_channel(cfg->adc_channel);
+	}
+	pin_mv /= BATTERY_SAMPLES;
 
 	/* Undo voltage divider: battery_mv = pin_mv x den / num */
 	data->voltage_mv = pin_mv * cfg->div_den / cfg->div_num;

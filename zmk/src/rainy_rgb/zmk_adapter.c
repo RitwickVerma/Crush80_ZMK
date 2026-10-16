@@ -3,10 +3,13 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/sys_io.h>
 #include <zephyr/init.h>
+#include <string.h>
 #include "zmk_adapter.h"
 #include <zmk/event_manager.h>
 #include <zmk/events/position_state_changed.h>
 #include <zmk/keymap.h>
+#include <zmk/matrix.h>   /* ZMK_KEYMAP_LEN */
+#include <zmk/behavior.h> /* struct zmk_behavior_binding */
 #include <zmk/hid_indicators.h>
 #include <zmk/battery.h>
 #include <zmk/events/layer_state_changed.h>
@@ -36,12 +39,48 @@ int rrgb_strip_init(void) {
     return 0;
 }
 
+/* The Fn layer is found by its display name ("Fn"), not by index: its index
+ * depends on the keymap (it must be the top real layer, see crush80.keymap). */
+static int fn_layer_id(void) {
+    for (int id = 0; id < ZMK_KEYMAP_LAYERS_LEN; id++) {
+        const char *name = zmk_keymap_layer_name(id);
+        if (name && strcmp(name, "Fn") == 0) {
+            return id;
+        }
+    }
+    return -1;
+}
+
+/* Tell the overlay whether Fn is held and, if so, which keys it binds
+ * (anything but &trans / &none), read from the live keymap so ZMK Studio
+ * edits are reflected. */
+static void fn_overlay_update(void) {
+    int fn = fn_layer_id();
+
+    if (fn < 0 || !zmk_keymap_layer_active(fn)) {
+        rrgb_overlay_set_fn(false, NULL);
+        return;
+    }
+
+    uint8_t bitmap[RRGB_FN_BITMAP_BYTES] = {0};
+
+    for (int pos = 0; pos < ZMK_KEYMAP_LEN && pos < RRGB_FN_BITMAP_BYTES * 8; pos++) {
+        const struct zmk_behavior_binding *b = zmk_keymap_get_layer_binding_at_idx(fn, pos);
+
+        if (b && b->behavior_dev && strcmp(b->behavior_dev, "transparent") != 0 &&
+            strcmp(b->behavior_dev, "none") != 0) {
+            bitmap[pos / 8] |= BIT(pos % 8);
+        }
+    }
+    rrgb_overlay_set_fn(true, bitmap);
+}
+
 static int rrgb_event_listener(const zmk_event_t *eh) {
     const struct zmk_position_state_changed *ev = as_zmk_position_state_changed(eh);
     if (ev) { rrgb_on_key(ev->position, ev->state); }
 
     const struct zmk_layer_state_changed *lev = as_zmk_layer_state_changed(eh);
-    if (lev) { rrgb_overlay_set_fn(zmk_keymap_layer_active(1)); }
+    if (lev) { fn_overlay_update(); }
 
     const struct zmk_hid_indicators_changed *iev = as_zmk_hid_indicators_changed(eh);
     if (iev) { rrgb_overlay_set_caps((iev->indicators & BIT(1)) != 0); }
@@ -67,7 +106,7 @@ ZMK_SUBSCRIPTION(rrgb_listener, zmk_activity_state_changed);
 
 static int rrgb_overlay_seed(void) {
     rrgb_overlay_set_caps((zmk_hid_indicators_get_current_profile() & BIT(1)) != 0);
-    rrgb_overlay_set_fn(zmk_keymap_layer_active(1));
+    fn_overlay_update();
     rrgb_overlay_set_battery(zmk_battery_state_of_charge());
     return 0;
 }

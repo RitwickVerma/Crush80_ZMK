@@ -188,6 +188,14 @@ def find_port():
         hits = sorted(glob.glob("/dev/serial/by-id/*MCUBOOT*"))
         if hits:
             return os.path.realpath(hits[0])
+        if sys.platform == "darwin":
+            # macOS names ports by location, not product: take the only one.
+            mac = glob.glob("/dev/cu.usbmodem*")
+            if len(mac) == 1:
+                return mac[0]
+            if len(mac) > 1:
+                sys.exit("Several USB serial ports; pick the bootloader with --port: "
+                         + ", ".join(sorted(mac)))
         if not told:
             print("Waiting for the bootloader (put the keyboard in recovery, see docs/flashing.md)...")
             told = True
@@ -195,9 +203,9 @@ def find_port():
     sys.exit("No MCUboot device found. Is the keyboard in recovery mode? See docs/flashing.md.")
 
 
-def list_images(smp):
+def list_images(smp, quiet_empty=False):
     images = smp.request(0, 1, 0, {}).get("images", [])
-    if not images:
+    if not images and not quiet_empty:
         print("  (no valid image)")
     for im in images:
         print(f"  slot {im.get('slot')}: version {im.get('version')}  "
@@ -228,6 +236,8 @@ def main():
         want = image_hash(data)
         t0 = time.monotonic()
         off = 0
+        tty = sys.stdout.isatty()
+        last_pct = -10
         while off < len(data):
             body = {"off": off, "data": data[off:off + CHUNK]}
             if off == 0:
@@ -237,9 +247,16 @@ def main():
             if new <= off:
                 sys.exit(f"upload stalled at offset {off}")
             off = new
-            print(f"\r  {100 * off // len(data):3d} %  {off}/{len(data)} B", end="", flush=True)
-        print(f"\n  uploaded in {time.monotonic() - t0:.1f} s")
-        images = list_images(smp)
+            pct = 100 * off // len(data)
+            if tty:
+                print(f"\r  {pct:3d} %  {off}/{len(data)} B", end="", flush=True)
+            elif pct >= last_pct + 10:                 # logs/pipes: one line per 10 %
+                last_pct = pct - pct % 10
+                print(f"  {pct:3d} %  {off}/{len(data)} B", flush=True)
+        if tty:
+            print()                                    # end the \r progress line
+        print(f"  uploaded in {time.monotonic() - t0:.1f} s")
+        images = list_images(smp, quiet_empty=True)
         if any(im.get("hash") == want for im in images):
             print("Verified: image hash matches.")
         elif images:

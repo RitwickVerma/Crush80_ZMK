@@ -2,7 +2,7 @@
 # Apply local patches to west-managed repositories after west update.
 #
 # Applies patches for: zephyr, hal_telink, mcuboot, zmk-src
-# Idempotent: safe to run multiple times (skips already-applied patches).
+# Idempotent: safe to run multiple times (skips a fully applied series).
 #
 # Usage: ./patches/apply-patches.sh [WORKSPACE_DIR]
 #   WORKSPACE_DIR defaults to the parent directory of this script's location.
@@ -44,25 +44,43 @@ apply_patches_for_repo() {
         return 0
     fi
 
+    # Later patches edit lines that earlier ones added, so a single patch
+    # cannot be checked against the tree on its own (a reverse-check of an
+    # early patch fails once a later one is applied). Build the expected
+    # result instead, HEAD plus the whole series, in a scratch index, and
+    # compare the working tree with it.
+    local scratch
+    scratch="$(mktemp -d)"
+    local index="$scratch/index"
+    local series_ok=1
+
+    GIT_INDEX_FILE="$index" git -C "$repo_path" read-tree HEAD
     for patch in "${patches[@]}"; do
-        local patch_name
-        patch_name="$(basename "$patch")"
-
-        # Check if already applied by trying to reverse-apply
-        if git -C "$repo_path" apply --reverse --check "$patch" 2>/dev/null; then
-            echo "  [skip] $patch_name (already applied)"
-            continue
-        fi
-
-        # Check if it applies cleanly
-        if git -C "$repo_path" apply --check "$patch" 2>/dev/null; then
-            git -C "$repo_path" apply "$patch"
-            echo "  [ ok ] $patch_name"
-        else
-            echo "  [FAIL] $patch_name — does not apply cleanly"
+        if ! GIT_INDEX_FILE="$index" git -C "$repo_path" apply --cached "$patch" 2>/dev/null; then
+            echo "  [FAIL] $(basename "$patch") — does not apply on top of the patches before it"
+            series_ok=0
             FAILED=1
+            break
         fi
     done
+
+    if [ $series_ok -eq 1 ]; then
+        if GIT_INDEX_FILE="$index" git -C "$repo_path" diff --quiet; then
+            echo "  [skip] all ${#patches[@]} already applied"
+        elif [ -z "$(git -C "$repo_path" status --porcelain --untracked-files=no)" ]; then
+            for patch in "${patches[@]}"; do
+                git -C "$repo_path" apply "$patch"
+                echo "  [ ok ] $(basename "$patch")"
+            done
+        else
+            echo "  [FAIL] $repo_path has changes that are not exactly this patch series."
+            echo "         Inspect with: git -C $repo_path diff"
+            FAILED=1
+        fi
+    fi
+
+    rm -f "$index"
+    rmdir "$scratch"
 }
 
 echo "Applying patches from: $PATCH_DIR"

@@ -5,11 +5,6 @@ if BOARD_CRUSH80
 config SOC_FLASH_TELINK_B91
 	default y if FLASH
 
-config WDT_B91
-	bool
-	default y
-	depends on WDT
-
 # Multi-level IRQ fix — identical to Rainy 75 Pro.
 # The B91 PLIC driver selects MULTI_LEVEL_INTERRUPTS + 2ND_LEVEL_INTERRUPTS.
 # Without MAX_IRQ_PER_AGGREGATOR, all PLIC interrupts appear spurious.

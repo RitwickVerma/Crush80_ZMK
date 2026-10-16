@@ -17,7 +17,8 @@
  * wireless switch off the board is VBUS-powered only, so a cable pull is a
  * full power cycle and .noinit SRAM does NOT survive it — flash is the only
  * medium that can carry the pre-wedge event sequence across the user's
- * instinctive replug.  Read back post-mortem with usb_diag.py --saved.
+ * instinctive replug.  Read back post-mortem over SMP group 64 cmd 4 (the
+ * reader tool, usb_diag.py --saved, is not in this repo).
  */
 
 #include <string.h>
