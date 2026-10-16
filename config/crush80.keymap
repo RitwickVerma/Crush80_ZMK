@@ -114,18 +114,20 @@
 		 *   RGB          Bspc on/off   - = speed   [ ] hue   \ Enter effect   Up/Down brightness   B battery
 		 *   modes        M Mac mode
 		 *   navigation   I J K L arrows   U O Home End   Y N PgUp PgDn   H Bspc   ; Del
+		 *   jumps        A D word left / right   W S paragraph up / down
 		 *   Space        hold for the Num layer
 		 *
 		 * Shift, Ctrl, Alt and Cmd stay as they are, so Shift+Fn+L selects and
-		 * Ctrl+Fn+J jumps a word (Opt+Fn+J on a Mac).
+		 * Shift+Fn+D selects a word. A D W S send Ctrl+Left / Right / Up / Down
+		 * (MacFn turns them into Option+arrows on a Mac).
 		 */
 		fn_layer {
 			display-name = "Fn";
 			bindings = <
 				&bootloader      &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &studio_unlock   &trans           &kp C_MUTE       &kp C_VOL_UP     &kp C_BRI_UP
 				&trans           &bt BT_SEL 0     &bt BT_SEL 1     &bt BT_SEL 2     &out OUT_USB     &out OUT_TOG     &bt BT_SEL 3     &bt BT_SEL 4     &trans           &trans           &trans           &rgb RGB_SPD     &rgb RGB_SPI     &rgb RGB_TOG     &kp C_PREV       &kp C_PP         &kp C_NEXT
-				&trans           &trans           &trans           &trans           &trans           &trans           &kp PG_UP        &kp HOME         &kp UP           &kp END          &trans           &rgb RGB_HUD     &rgb RGB_HUI     &rgb RGB_EFF     &bt BT_CLR       &kp C_VOL_DN     &kp C_BRI_DN
-				&trans           &trans           &trans           &trans           &trans           &trans           &kp BSPC         &kp LEFT         &kp DOWN         &kp RIGHT        &kp DEL          &trans           &rgb RGB_EFF
+				&trans           &trans           &kp LC(UP)       &trans           &trans           &trans           &kp PG_UP        &kp HOME         &kp UP           &kp END          &trans           &rgb RGB_HUD     &rgb RGB_HUI     &rgb RGB_EFF     &bt BT_CLR       &kp C_VOL_DN     &kp C_BRI_DN
+				&trans           &kp LC(LEFT)     &kp LC(DOWN)     &kp LC(RIGHT)    &trans           &trans           &kp BSPC         &kp LEFT         &kp DOWN         &kp RIGHT        &kp DEL          &trans           &rgb RGB_EFF
 				&trans           &trans           &trans           &trans           &trans           &rgb RGB_BAT     &kp PG_DN        &tog MAC         &trans           &trans           &trans           &trans           &rgb RGB_BRI
 				&trans           &trans           &trans           &mo NUM          &trans           &trans           &trans           &trans           &trans           &rgb RGB_BRD     &trans
 			>;
@@ -133,15 +135,16 @@
 
 		/*
 		 * Layer 3: MacFn (switches on by itself when Mac and Fn are both active).
-		 * U / O become Cmd+Left / Right, so Fn+U / O still mean start / end of line.
+		 * U / O become Cmd+Left / Right, so Fn+U / O still mean start / end of line,
+		 * and A D W S become Option+arrows (word and paragraph, the Mac way).
 		 */
 		mac_fn_layer {
 			display-name = "MacFn";
 			bindings = <
 				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
 				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp LG(LEFT)     &trans           &kp LG(RIGHT)    &trans           &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &kp LA(UP)       &trans           &trans           &trans           &trans           &kp LG(LEFT)     &trans           &kp LG(RIGHT)    &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &kp LA(LEFT)     &kp LA(DOWN)     &kp LA(RIGHT)    &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
 				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
 				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
 			>;

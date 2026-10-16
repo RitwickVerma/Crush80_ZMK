@@ -82,6 +82,7 @@ plain hold, and every layer can be edited in VIA.
 |---|---|---|---|
 | I J K L | ↑ ← ↓ → | U / O | Home / End |
 | Y / N | Page up / down | H / ; | Backspace / Delete |
+| A / D | Word left / right | W / S | Paragraph up / down |
 | 1 2 3 / 6 7 | Bluetooth profiles 1-3 / 4-5 | 4 / 5 | USB output / toggle USB and Bluetooth |
 | Del | Clear the current Bluetooth pairing | M | Mac mode on / off |
 | PrtSc / ScrLk / Pause | Mute / volume up / brightness up | Ins / Home / PgUp | Previous / play / next |
@@ -90,8 +91,10 @@ plain hold, and every layer can be edited in VIA.
 | ↑ / ↓ | RGB brightness | B | Show battery level |
 | F12 | Unlock ZMK Studio | Esc | Bootloader (see known issues) |
 
-Shift, Ctrl, Alt and Cmd keep working with these, so Shift+Fn+L selects and
-Ctrl+Fn+J jumps a word (Opt+Fn+J on a Mac).
+Shift, Ctrl, Alt and Cmd keep working with these, so Shift+Fn+L selects a
+character and Shift+Fn+D selects a word. A D W S send Ctrl+arrows (Option+arrows
+in Mac mode). There is no real "sentence" keystroke in any OS; paragraph is the
+closest, and it works in browsers, Word and most text fields.
 
 **Hold Fn and Space: numpad and symbols**
 

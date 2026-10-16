@@ -45,10 +45,17 @@ layout on first boot.
         Y PgUp   U Home   I Up      O End
         H Bspc   J Left   K Down    L Right    ; Del
         N PgDn                      Space  hold for Num
+
+        W paragraph up      A word left     S paragraph down     D word right
 ```
 
+A D W S are Ctrl+Left / Right / Up / Down (Option+arrows in Mac mode, through MacFn).
+No OS has a sentence keystroke; paragraph is the closest, and it works in browsers,
+Word and most text fields (some editors, such as VS Code, use Ctrl+Up / Down to
+scroll instead).
+
 F1-F11 are not bound on Fn, so Fn+F-key is the plain F-key. Modifiers pass
-through: Shift+Fn+L selects, Ctrl+Fn+J jumps a word, Alt+Fn+J goes back.
+through: Shift+Fn+L selects, Shift+Fn+D selects a word, Alt+Fn+J goes back.
 
 The keys light up while you hold Fn. Every bound key is white; the active Bluetooth
 profile is blue (orange while it waits for a host), the USB key is green when USB is
@@ -68,7 +75,8 @@ keymap, so they follow your edits.
 Only what differs on a Mac: Win and Alt swap, and so do right Alt and Super, giving
 Ctrl Opt Cmd Space Cmd Opt in Apple's order. PrtSc is Cmd+Shift+4 (screenshot a
 region), Home and End are Cmd+Left and Cmd+Right (start and end of line, as on
-Windows and Linux). MacFn does the same for Fn+U and Fn+O. MacFn is a ZMK
+Windows and Linux). MacFn does the same for Fn+U and Fn+O, and turns Fn+A D W S into
+Option+arrows. MacFn is a ZMK
 conditional layer: it switches on by itself when Mac and Fn are both active.
 
 ## Both Shift keys: Caps Word
