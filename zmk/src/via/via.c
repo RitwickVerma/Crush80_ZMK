@@ -12,7 +12,8 @@
  * show up in Studio. Behaviors VIA cannot express appear as a read-only
  * placeholder key and are never overwritten unless the user sets that key.
  *
- * Supported: keymap read/write, layers, macros (via_macro.c), the key tester.
+ * Supported: keymap read/write, layers, macros (via_macro.c), the key tester
+ * (the last two behind a physical unlock gesture, see below).
  * Not supported (the app hides or greys them): lighting menus, encoders.
  *
  * The definition VIA needs (config/via.json) is loaded by the user in VIA's
@@ -66,13 +67,18 @@ LOG_MODULE_REGISTER(via, CONFIG_LOG_DEFAULT_LEVEL);
 #define KBVAL_MATRIX_STATE 0x03
 #define KBVAL_FIRMWARE_VERSION 0x04
 
-/* The key tester shows which keys are down, so any program that can open the
- * raw HID device could read what is typed. It is therefore off until the user
- * holds Esc and Enter together for 3 s, and stays on for 10 minutes. */
-#define TESTER_KEYS 2
-#define TESTER_HOLD_MS 3000
-#define TESTER_WINDOW_MS (10 * 60 * 1000)
-static const uint8_t tester_rc[TESTER_KEYS][2] = {{0, 0}, {3, 13}};
+/* Anything that could leak what the user types or stores is behind a physical
+ * gesture, because any program that can open the raw HID device can send VIA
+ * commands (the udev rule makes it readable by every local user): the key
+ * tester shows which keys are down, and the macro buffer may hold a password.
+ * They stay locked until the user holds Esc and Enter together for 3 s, then
+ * unlock for 10 minutes. Locked macro reads return zeros and writes are ignored
+ * (VIA would otherwise overwrite real macros with the blanks it read). Playing
+ * a macro from its key is never affected. */
+#define UNLOCK_KEYS 2
+#define UNLOCK_HOLD_MS 3000
+#define UNLOCK_WINDOW_MS (10 * 60 * 1000)
+static const uint8_t unlock_rc[UNLOCK_KEYS][2] = {{0, 0}, {3, 13}};
 
 /* Writes are applied at once and saved to flash after this much quiet. */
 #define SAVE_DELAY K_SECONDS(5)
@@ -207,21 +213,25 @@ static void set_buffer(uint16_t offset, uint8_t size, const uint8_t *in) {
     }
 }
 
-/* ---- key tester ---------------------------------------------------------- */
+/* ---- unlock gesture ------------------------------------------------------ */
 
-static int64_t tester_until;
-static bool tester_keys_down;
+static int64_t unlocked_until;
+static bool unlock_keys_down;
+
+static bool unlocked(void) {
+    return k_uptime_get() < unlocked_until;
+}
 
 static bool pos_pressed(uint8_t pos) {
     return pressed[pos / 32] & BIT(pos % 32);
 }
 
-static void tester_work_fn(struct k_work *work);
-static K_WORK_DELAYABLE_DEFINE(tester_work, tester_work_fn);
+static void unlock_work_fn(struct k_work *work);
+static K_WORK_DELAYABLE_DEFINE(unlock_work, unlock_work_fn);
 
-static bool tester_combo_held(void) {
-    for (int i = 0; i < TESTER_KEYS; i++) {
-        uint8_t pos = rc_to_pos[tester_rc[i][0]][tester_rc[i][1]];
+static bool unlock_combo_held(void) {
+    for (int i = 0; i < UNLOCK_KEYS; i++) {
+        uint8_t pos = rc_to_pos[unlock_rc[i][0]][unlock_rc[i][1]];
 
         if (pos == POS_NONE || !pos_pressed(pos)) {
             return false;
@@ -230,11 +240,11 @@ static bool tester_combo_held(void) {
     return true;
 }
 
-static void tester_work_fn(struct k_work *work) {
+static void unlock_work_fn(struct k_work *work) {
     ARG_UNUSED(work);
-    if (tester_combo_held()) {
-        tester_until = k_uptime_get() + TESTER_WINDOW_MS;
-        LOG_INF("key tester enabled for 10 minutes");
+    if (unlock_combo_held()) {
+        unlocked_until = k_uptime_get() + UNLOCK_WINDOW_MS;
+        LOG_INF("VIA key tester and macros unlocked for 10 minutes");
     }
 }
 
@@ -246,14 +256,14 @@ static int on_position(const zmk_event_t *eh) {
     }
     WRITE_BIT(pressed[ev->position / 32], ev->position % 32, ev->state);
 
-    bool held = tester_combo_held();
+    bool held = unlock_combo_held();
 
-    if (held && !tester_keys_down) {
-        k_work_reschedule(&tester_work, K_MSEC(TESTER_HOLD_MS));
-    } else if (!held && tester_keys_down) {
-        k_work_cancel_delayable(&tester_work);
+    if (held && !unlock_keys_down) {
+        k_work_reschedule(&unlock_work, K_MSEC(UNLOCK_HOLD_MS));
+    } else if (!held && unlock_keys_down) {
+        k_work_cancel_delayable(&unlock_work);
     }
-    tester_keys_down = held;
+    unlock_keys_down = held;
     return ZMK_EV_EVENT_BUBBLE;
 }
 
@@ -281,7 +291,7 @@ static void handle(uint8_t *msg) {
             sys_put_be32(0, &d[1]);
             break;
         case KBVAL_MATRIX_STATE:
-            if (k_uptime_get() >= tester_until) {
+            if (!unlocked()) {
                 msg[0] = ID_UNHANDLED;
                 break;
             }
@@ -347,7 +357,7 @@ static void handle(uint8_t *msg) {
         uint16_t off = sys_get_be16(&d[0]);
         uint8_t size = d[2];
 
-        if (size > VIA_EP_SIZE - 4) {
+        if (size > VIA_EP_SIZE - 4 || !unlocked()) {
             memset(&d[3], 0, VIA_EP_SIZE - 4);
             break;
         }
@@ -358,13 +368,15 @@ static void handle(uint8_t *msg) {
         uint16_t off = sys_get_be16(&d[0]);
         uint8_t size = d[2];
 
-        if (size <= VIA_EP_SIZE - 4) {
+        if (size <= VIA_EP_SIZE - 4 && unlocked()) {
             via_macro_write(off, size, &d[3]);
         }
         break;
     }
     case ID_MACRO_RESET:
-        via_macro_reset();
+        if (unlocked()) {
+            via_macro_reset();
+        }
         break;
     default:
         msg[0] = ID_UNHANDLED;

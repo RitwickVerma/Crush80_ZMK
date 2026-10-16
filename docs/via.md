@@ -35,8 +35,9 @@ with VIA's own definition validator (`@the-via/reader`).
   layout), single taps, key down/up and delays, with the timing of ZMK's own
   macros (30 ms taps, 15 ms between actions). A macro already playing is not
   restarted; saving macros stops it and releases any held key. ZMK Studio shows
-  them as the *VIA Macro* behavior with a number.
-- **Key tester**, once enabled (below).
+  them as the *VIA Macro* behavior with a number. Reading and editing macros needs
+  the unlock gesture below.
+- **Key tester**, once unlocked (below).
 
 Edits apply at once and are saved to flash five seconds after the last one.
 
@@ -55,12 +56,27 @@ check the key still reads what you set.
 
 There is no bootloader keycode: use `scripts/force_recovery.py`.
 
-## Key tester
+## Unlocking the key tester and macros
 
-The tester shows which keys are down, so any program that can open the
-keyboard's raw HID device could read what you type. It is therefore off until
-you hold **Esc and Enter together for 3 seconds**; it then stays on for
-10 minutes.
+Two things are locked until you ask for them with a physical gesture:
+
+- the **key tester**, which shows which keys are down, and
+- **reading and writing macros**, because a macro may hold a password.
+
+Any program that can open the keyboard's raw HID device can send VIA commands
+without asking, and the udev rule that makes flashing work gives every local
+user that access. So both stay shut until you hold **Esc and Enter together for
+3 seconds**; they then stay open for 10 minutes, and lock again after a reboot.
+
+While locked, macro reads return empty macros and macro writes are ignored
+(otherwise VIA would overwrite your real macros with the blanks it read).
+Playing a macro from its key always works. To edit macros: unlock, then
+(re)connect VIA so it reads them, edit, and save within the 10 minutes.
+
+A macro that types a password still types it into whatever has focus, for anyone
+at the keyboard, and it sits unencrypted in the keyboard's flash. Treat it like
+a sticky note under the keyboard: fine for a throwaway account, not for your
+bank.
 
 ## Two entries in the device list
 
