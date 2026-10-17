@@ -23,6 +23,7 @@
 #include <string.h>
 #include <zephyr/device.h>
 #include <zephyr/init.h>
+#include <zephyr/irq.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
@@ -219,7 +220,11 @@ static int64_t unlocked_until;
 static bool unlock_keys_down;
 
 static bool unlocked(void) {
-    return k_uptime_get() < unlocked_until;
+    unsigned int key = irq_lock(); /* a 64-bit access is two loads on this core */
+    int64_t until = unlocked_until;
+
+    irq_unlock(key);
+    return k_uptime_get() < until;
 }
 
 static bool pos_pressed(uint8_t pos) {
@@ -243,7 +248,11 @@ static bool unlock_combo_held(void) {
 static void unlock_work_fn(struct k_work *work) {
     ARG_UNUSED(work);
     if (unlock_combo_held()) {
-        unlocked_until = k_uptime_get() + UNLOCK_WINDOW_MS;
+        int64_t until = k_uptime_get() + UNLOCK_WINDOW_MS;
+        unsigned int key = irq_lock();
+
+        unlocked_until = until;
+        irq_unlock(key);
         LOG_INF("VIA key tester and macros unlocked for 10 minutes");
     }
 }

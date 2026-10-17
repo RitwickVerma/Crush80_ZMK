@@ -35,7 +35,6 @@
 #if IS_ENABLED(CONFIG_VIA)
 #include "via/via.h"
 #endif
-#include "rainy_rgb/led_map.h"
 
 LOG_MODULE_REGISTER(openrgb, CONFIG_LOG_DEFAULT_LEVEL);
 
@@ -234,7 +233,7 @@ static void cmd_get_led_info(uint8_t *rsp, const uint8_t *data) {
 
     /* 7 bytes per LED after the command byte: at most 8 fit in 64 bytes.
      * Capping the loop (not just skipping) keeps o from wrapping. */
-    count = MIN(count, (OPENRGB_EP_SIZE - 8) / 7 + 1);
+    count = MIN(count, (OPENRGB_EP_SIZE - 2) / 7); /* = 8 */
 
     for (uint8_t i = 0; i < count; i++) {
         uint16_t led = (uint16_t)first + i;
@@ -434,7 +433,9 @@ static void openrgb_handle(const uint8_t *data, uint32_t len) {
     openrgb_send(response);
 }
 
-K_THREAD_STACK_DEFINE(openrgb_stack, 1024);
+/* 2 KB: the VIA path on this thread (via_handle_packet) reaches the keymap and macro
+ * code, which can raise HID events on the caller's stack. */
+K_THREAD_STACK_DEFINE(openrgb_stack, 2048);
 static struct k_thread openrgb_thread;
 
 static void openrgb_thread_fn(void *a, void *b, void *c) {

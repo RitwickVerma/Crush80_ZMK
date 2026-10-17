@@ -23,7 +23,7 @@ with VIA's own definition validator (`@the-via/reader`).
 
 ## What works
 
-- **Keys and layers**: read and write every key on all 12 layer slots (the nine
+- **Keys and layers**: read and write every key on all 9 layer slots (the six
   in the keymap and the three ZMK Studio can fill). Basic keys, modifier combos,
   media keys, `MO`, `TG`, `TO` and `LT(layer, key)`.
 - **ZMK-only keys**: Bluetooth profiles 1-5, clear profile, USB / Bluetooth

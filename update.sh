@@ -21,9 +21,9 @@ DFU_ARGS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --build)      DO_BUILD=true; shift ;;
-        --firmware)   FIRMWARE="$2"; shift 2 ;;
+        --firmware)   [[ $# -ge 2 ]] || { echo "--firmware needs a file" >&2; exit 1; }; FIRMWARE="$2"; shift 2 ;;
         --firmware=*) FIRMWARE="${1#--firmware=}"; shift ;;
-        --port)       DFU_ARGS+=(--port "$2"); shift 2 ;;
+        --port)       [[ $# -ge 2 ]] || { echo "--port needs a device" >&2; exit 1; }; DFU_ARGS+=(--port "$2"); shift 2 ;;
         -h|--help)    sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *)            echo "Unknown option: $1" >&2; exit 1 ;;
     esac
@@ -35,4 +35,5 @@ fi
 
 [[ -f "$FIRMWARE" ]] || { echo "Firmware not found: $FIRMWARE (run: bash build.sh)" >&2; exit 1; }
 
-exec python3 "$REPO_DIR/scripts/dfu.py" "${DFU_ARGS[@]}" "$FIRMWARE"
+# ${arr[@]+...}: an empty array is an unbound variable under set -u on bash 3.2 (macOS)
+exec python3 "$REPO_DIR/scripts/dfu.py" ${DFU_ARGS[@]+"${DFU_ARGS[@]}"} "$FIRMWARE"
