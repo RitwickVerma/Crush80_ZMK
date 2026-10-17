@@ -32,7 +32,7 @@ index 67f33aae..15e9d271 100644
 +#if IS_ENABLED(CONFIG_CRUSH80_RECOVERY_KEY) && IS_ENABLED(CONFIG_RETENTION_BOOT_MODE)
 +    if (cfg->boot_mode == BOOT_MODE_TYPE_BOOTLOADER) {
 +        /* The retained boot-mode flag does not survive this chip's reset. */
-+        crush80_enter_recovery(); /* returns only if it failed */
++        crush80_enter_recovery(); /* does not return */
 +        return ZMK_BEHAVIOR_OPAQUE;
 +    }
 +#endif

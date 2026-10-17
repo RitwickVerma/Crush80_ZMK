@@ -161,7 +161,7 @@ Pinout, LED chain, flash map and stock-firmware notes:
 | Updates over USB (`update.sh` / `dfu.py`) | Working: 290 KB in 11 s |
 | ZMK Studio | Over Bluetooth (the USB serial port was dropped so OpenRGB sees the keyboard) |
 | VIA (keys, layers, 16 macros) | Working over USB, checked against the real app on Linux; not yet tried on macOS or Windows ([docs/via.md](docs/via.md)) |
-| Fn+Esc → recovery | Erases the image header so MCUboot stays in USB recovery; built, **not yet confirmed on hardware**. Fallback: `scripts/force_recovery.py` ([details](docs/flashing.md#update-a-keyboard-that-runs-zmk)) |
+| Fn+Esc → recovery | Erases the image header so MCUboot stays in USB recovery; works (confirmed on hardware). Fallback: `scripts/force_recovery.py` ([details](docs/flashing.md#update-a-keyboard-that-runs-zmk)) |
 | 2.4 GHz dongle | Not supported: proprietary protocol, no open implementation exists |
 | Battery percentage | Reads; scaling not yet calibrated on this board |
 | Timers | Run about 6% fast: 1000 ms of firmware time is about 940 ms real (measured against the host over 20 s), so tapping terms, macro delays and idle timeouts are that much shorter. The 32 kHz clock is calibrated at boot (`soc.c`) yet still reads fast; cause not found |
