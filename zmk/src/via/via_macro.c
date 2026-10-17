@@ -53,12 +53,18 @@ static int settings_set(const char *name, size_t len, settings_read_cb read_cb, 
 
 SETTINGS_STATIC_HANDLER_DEFINE(via_macro, "via_macro", NULL, settings_set, NULL, NULL);
 
+/* A snapshot, so the macro lock is not held across the flash write (a key press
+ * that starts a macro would otherwise wait for it). Only save_fn touches it. */
+static uint8_t save_buf[VIA_MACRO_SIZE];
+
 static void save_fn(struct k_work *work) {
     ARG_UNUSED(work);
     k_mutex_lock(&lock, K_FOREVER);
-    int err = settings_save_one("via_macro/buf", buf, sizeof(buf));
-
+    memcpy(save_buf, buf, sizeof(save_buf));
     k_mutex_unlock(&lock);
+
+    int err = settings_save_one("via_macro/buf", save_buf, sizeof(save_buf));
+
     if (err) {
         LOG_ERR("saving macros failed (%d)", err);
     }
@@ -124,7 +130,7 @@ static void play_fn(struct k_work *work) {
         k_work_reschedule(&play_work, K_MSEC(WAIT_MS));
         goto out;
     }
-    if (!playing || buf[pos] == 0) {
+    if (!playing || pos >= sizeof(buf) || buf[pos] == 0) {
         stop_playback();
         goto out;
     }
@@ -134,7 +140,9 @@ static void play_fn(struct k_work *work) {
     if (c == 0x01) {
         uint8_t action = buf[pos];
 
-        if (action < 1 || action > 4 || pos + 1 >= sizeof(buf)) {
+        /* pos + 2: the action byte and, for 1-3, its keycode byte must both be inside
+         * the buffer (the last byte is always 0, a terminator, never a keycode). */
+        if (action < 1 || action > 4 || pos + 2 >= sizeof(buf)) {
             stop_playback(); /* corrupt buffer */
             goto out;
         }
@@ -151,8 +159,16 @@ static void play_fn(struct k_work *work) {
             k_work_reschedule(&play_work, K_MSEC(MAX(ms, 1)));
             goto out;
         }
+        if (buf[pos] == 0) { /* keycode 0 would swallow the macro's terminator */
+            stop_playback();
+            goto out;
+        }
         uint32_t enc = usage(buf[pos++]);
 
+        if (action == 2 && held_count >= MAX_HELD) { /* could never be released: do not press it */
+            k_work_reschedule(&play_work, K_MSEC(WAIT_MS));
+            goto out;
+        }
         key_event(enc, action != 3);
         if (action == 1) {
             tap_encoded = enc;

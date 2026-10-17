@@ -4,7 +4,7 @@
  * Exposes erase/write/read/commit commands for arbitrary flash offsets,
  * enabling firmware restore over USB without the SWS hardware debugger.
  *
- * Group ID 64 (MGMT_GROUP_ID_PERUSER), 5 commands:
+ * Group ID 64 (MGMT_GROUP_ID_PERUSER), 6 commands:
  *   0: erase    {"off": uint, "len": uint}        -> {"rc": int}
  *   1: write    {"off": uint, "data": bstr}        -> {"rc": int}
  *   2: read     {"off": uint, "len": uint}          -> {"rc": int, "data": bstr}
@@ -262,7 +262,8 @@ static int flash_mgmt_erase(struct smp_streamer *ctxt)
 
 	/*
 	 * Erase sector by sector with k_msleep() between each.
-	 * Safe ONLY for regions outside the running XIP code (0x10000-0x5C000).
+	 * Safe ONLY for regions outside the running XIP code (slot 0, 0x10000-0x7FFFF).
+	 * Over Bluetooth only the slot 0 header sector is allowed, see erase_allowed().
 	 * For erasing the app image area, use the commit command instead.
 	 */
 	for (uint32_t pos = off; pos < off + len; pos += FLASH_SECTOR_SIZE) {
@@ -522,6 +523,10 @@ static int flash_mgmt_usb_diag(struct smp_streamer *ctxt)
  */
 static int flash_mgmt_usb_stress(struct smp_streamer *ctxt)
 {
+	if (REMOTE_LIMITED) { /* up to 200 USB re-attach cycles: not for a Bluetooth peer */
+		return MGMT_ERR_EACCESSDENIED;
+	}
+
 	zcbor_state_t *zse = ctxt->writer->zs;
 	zcbor_state_t *zsd = ctxt->reader->zs;
 	uint32_t n = 0, gap = 3000;
