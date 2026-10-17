@@ -18,6 +18,14 @@ config BOOT_DIAG_GPIO
 	help
 	  Toggle PD7 at each boot stage for logic analyzer visibility.
 
+config CRUSH80_RECOVERY_KEY
+	bool "Fn+Esc enters MCUboot USB recovery by erasing the image header"
+	default y
+	depends on FLASH
+	help
+	  Makes &bootloader erase the slot 0 header sector and reboot, so MCUboot stays in
+	  serial recovery. The retained-RAM boot flag does not survive this chip's reset.
+
 config FLASH_MGMT
 	bool "Raw flash management via mcumgr"
 	default n

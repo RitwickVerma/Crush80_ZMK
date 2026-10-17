@@ -27,6 +27,11 @@ if(CONFIG_POWEROFF)
   zephyr_library_sources(src/poweroff.c)
 endif()
 
+if(CONFIG_CRUSH80_RECOVERY_KEY)
+  zephyr_library_named(recovery)
+  zephyr_library_sources(src/recovery.c)
+endif()
+
 if(CONFIG_FLASH_MGMT)
   zephyr_library_named(flash_mgmt)
   zephyr_library_sources(src/flash_mgmt.c)

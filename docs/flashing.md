@@ -47,13 +47,13 @@ there; rerun the command `install_zmk.sh` prints.
    python3 scripts/force_recovery.py      # over Bluetooth, then unplug and replug USB
    ```
 
-   **Fn+Esc is meant to do this, but currently does not**: the keyboard reboots
-   straight back into ZMK. The likely cause is that the boot-mode flag MCUboot
-   reads (the last 16 bytes of RAM, `0x9FFF0`) does not survive the chip's reset;
-   fixing it means moving the flag in both the app and MCUboot, and rewriting
-   MCUboot is not something to do without a debugger at hand. Until then,
-   `force_recovery.py` is the way in. It needs the keyboard paired over
-   Bluetooth.
+   **Or press Fn+Esc.** It erases the first sector of the app image (the same thing
+   `force_recovery.py` does over Bluetooth), so MCUboot finds no image and stays in
+   recovery. The keyboard types nothing until you flash an image. The older approach, a
+   boot-mode flag in the last 16 bytes of RAM (`0x9FFF0`), never worked: the flag does
+   not survive the chip's reset. Fn+Esc has not been confirmed on hardware yet; if the
+   keyboard just reboots into ZMK, use `force_recovery.py`, which needs the keyboard
+   paired over Bluetooth.
 2. Flash:
 
    ```bash
