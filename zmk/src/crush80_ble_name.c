@@ -9,6 +9,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/settings/settings.h>
 
 #include <zmk/ble.h>
 #include <zmk/event_manager.h>
@@ -53,3 +54,15 @@ static int crush80_ble_name_init(void) {
 }
 
 SYS_INIT(crush80_ble_name_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
+
+/* ZMK only raises the profile-changed event once the active profile connects, so a
+ * keyboard that boots on profile 3 would advertise as "Crush 80 1" until then. After
+ * settings_load() (main) the saved profile is known: name and advertise it right away.
+ * The "crush80_ble" subtree holds no settings; only its commit hook is used (a handler
+ * on ZMK's own "ble" subtree could shadow ZMK's loader). */
+static int commit_name(void) {
+    update_ble_name(zmk_ble_active_profile_index(), true);
+    return 0;
+}
+
+SETTINGS_STATIC_HANDLER_DEFINE(crush80_ble_name, "crush80_ble", NULL, NULL, commit_name, NULL);

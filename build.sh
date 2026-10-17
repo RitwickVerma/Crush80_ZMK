@@ -81,50 +81,31 @@ export ZEPHYR_SDK_INSTALL_DIR="$HOME/zephyr-sdk-0.17.0"
 echo "Workspace: $WORKSPACE_DIR"
 echo "Repo:      $REPO_DIR"
 
-# ── Sync board files into workspace ──────────────────────────────────────────
+# ── Sync the module into the workspace ───────────────────────────────────────
+# The workspace holds a copy of zmk/. Each directory is replaced as a whole, so a file
+# deleted from the repo is gone from the build too (a plain cp would keep it).
 echo ""
-echo "Syncing board files..."
-cp -r "$REPO_DIR/zmk/boards/crush80/"* "$WORKSPACE_DIR/zmk/boards/crush80/"
-cp "$KEYMAP_SRC" "$WORKSPACE_DIR/zmk/boards/crush80/crush80.keymap"
+echo "Syncing the module..."
+mirror() { # src dir, dest dir
+    rm -rf "$2"
+    mkdir -p "$(dirname "$2")"
+    cp -r "$1" "$2"
+}
 
-# Sync WS2812 LED strip driver + binding
-mkdir -p "$WORKSPACE_DIR/zmk/drivers/led_strip"
-cp -r "$REPO_DIR/zmk/drivers/led_strip/"* "$WORKSPACE_DIR/zmk/drivers/led_strip/"
-mkdir -p "$WORKSPACE_DIR/zmk/dts/bindings/led-strip"
-cp -r "$REPO_DIR/zmk/dts/bindings/led-strip/"* "$WORKSPACE_DIR/zmk/dts/bindings/led-strip/"
-
-# Sync platform drivers (usb, bluetooth, sensor, watchdog)
-for d in usb bluetooth sensor watchdog; do
-    mkdir -p "$WORKSPACE_DIR/zmk/drivers/$d"
-    cp -r "$REPO_DIR/zmk/drivers/$d/"* "$WORKSPACE_DIR/zmk/drivers/$d/"
-done
-
-# Sync DTS bindings for platform drivers
-for d in usb bluetooth sensor watchdog; do
-    mkdir -p "$WORKSPACE_DIR/zmk/dts/bindings/$d"
-    cp -r "$REPO_DIR/zmk/dts/bindings/$d/"* "$WORKSPACE_DIR/zmk/dts/bindings/$d/"
-done
-
-# Sync module root files (CMakeLists.txt, Kconfig, module.yml, src/, include/)
-cp "$REPO_DIR/zmk/CMakeLists.txt" "$WORKSPACE_DIR/zmk/"
-cp "$REPO_DIR/zmk/Kconfig" "$WORKSPACE_DIR/zmk/"
-mkdir -p "$WORKSPACE_DIR/zmk/zephyr"
-cp "$REPO_DIR/zmk/zephyr/module.yml" "$WORKSPACE_DIR/zmk/zephyr/"
-mkdir -p "$WORKSPACE_DIR/zmk/src" "$WORKSPACE_DIR/zmk/include"
-cp "$REPO_DIR/zmk/src/"* "$WORKSPACE_DIR/zmk/src/" 2>/dev/null || true
-cp -r "$REPO_DIR/zmk/include/"* "$WORKSPACE_DIR/zmk/include/" 2>/dev/null || true
-
-# Sync rainy_rgb engine (rainy_rgb src + behaviors + dtsi + behavior binding)
-mkdir -p "$WORKSPACE_DIR/zmk/src/rainy_rgb" "$WORKSPACE_DIR/zmk/src/behaviors"
-cp -r "$REPO_DIR/zmk/src/rainy_rgb/"* "$WORKSPACE_DIR/zmk/src/rainy_rgb/"
-cp -r "$REPO_DIR/zmk/src/behaviors/"* "$WORKSPACE_DIR/zmk/src/behaviors/"
-# VIA: regenerate the keyboard definition from the board DTS, then sync
+# VIA: regenerate the keyboard definition from the board DTS first (it lands in zmk/src/via)
 python3 "$REPO_DIR/scripts/gen_via_def.py" > /dev/null
-mkdir -p "$WORKSPACE_DIR/zmk/src/via"
-cp -r "$REPO_DIR/zmk/src/via/"* "$WORKSPACE_DIR/zmk/src/via/"
-mkdir -p "$WORKSPACE_DIR/zmk/dts" "$WORKSPACE_DIR/zmk/dts/bindings/behaviors"
-cp "$REPO_DIR/zmk/dts/rainy_rgb.dtsi" "$REPO_DIR/zmk/dts/via_macro.dtsi" "$WORKSPACE_DIR/zmk/dts/"
-cp -r "$REPO_DIR/zmk/dts/bindings/behaviors/"* "$WORKSPACE_DIR/zmk/dts/bindings/behaviors/"
+
+for d in boards/crush80 drivers dts include src zephyr; do
+    mirror "$REPO_DIR/zmk/$d" "$WORKSPACE_DIR/zmk/$d"
+done
+cp "$KEYMAP_SRC" "$WORKSPACE_DIR/zmk/boards/crush80/crush80.keymap"
+cp "$REPO_DIR/zmk/CMakeLists.txt" "$REPO_DIR/zmk/Kconfig" "$WORKSPACE_DIR/zmk/"
+
+# West reads its manifest from the workspace copy; a change there needs `west update`.
+if ! cmp -s "$REPO_DIR/zmk/west.yml" "$WORKSPACE_DIR/zmk/west.yml"; then
+    cp "$REPO_DIR/zmk/west.yml" "$WORKSPACE_DIR/zmk/west.yml"
+    echo "  NOTE: zmk/west.yml changed; run 'west update' in $WORKSPACE_DIR, then bash patches/apply-patches.sh"
+fi
 
 # Sync conf files
 cp "$REPO_DIR/conf/"* "$WORKSPACE_DIR/conf/"
