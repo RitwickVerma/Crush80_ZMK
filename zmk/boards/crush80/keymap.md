@@ -11,7 +11,7 @@ saved for the other layout will land on the wrong layers.
 ## Idea
 
 Base is a plain 80% layout: every key does what it says and Caps is Caps Lock.
-There is not a single hold-tap (the only timed thing is the 40 ms Shift+Shift combo), and every layer can be
+There is not a single hold-tap or combo, so nothing is timed, and every layer can be
 edited in VIA, because everything used is a plain layer key, a toggle or a key.
 Extras sit behind the Fn key.
 
@@ -87,12 +87,6 @@ down, with transparent keys falling through, so right Win, then Space, then P re
 layer 5. A ZMK *conditional layer* is the one thing to avoid for a layer you hold by hand:
 it re-checks its rule on every layer change and switches the layer off whenever the rule
 is false, which is what once made right Win dead.
-
-## Both Shift keys: Caps Word
-
-A combo (`caps_word_combo` in the keymap), not a layer: pressing both Shift keys
-within 40 ms switches Caps Word on, which capitalises until the next space or
-punctuation. It cannot be edited in VIA.
 
 ## Changing it
 

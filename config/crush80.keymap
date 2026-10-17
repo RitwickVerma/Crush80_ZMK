@@ -2,14 +2,13 @@
  * Wobkey Crush 80 — ZMK keymap
  *
  * Base is a plain 80% layout: every key does what it says, Caps is Caps Lock, and
- * there are no hold-taps (the only timed thing is the 40 ms
- * Shift+Shift combo). Everything extra sits behind the Fn key, which is a plain hold, and every layer here can be edited in VIA.
+ * there are no hold-taps and no combos. Everything extra sits behind the Fn key, which is a
+ * plain hold, and every layer here can be edited in VIA.
  *
  *   hold Fn              system controls + navigation (the HJKL cluster)
  *   hold Fn and Space    numpad and bracket symbols
  *   hold right Win       numpad on the nav cluster; add Space for the Macro layer (P)
  *   Fn+M                 Mac mode on / off (modifiers in Mac order, Cmd shortcuts)
- *   Shift + Shift        Caps Word (capitals until the next space or punctuation)
  *
  * Layers (the number is what VIA and ZMK Studio show)
  *   0 Base    1 Mac     2 Fn      3 MacFn   4 Num     5 Macro   6-8 spare (empty, yours)
@@ -43,22 +42,7 @@
 #define NUM   4
 #define MACRO 5
 
-/* Key positions for the combo below (row 4 of the matrix: LShift ... RShift). */
-#define POS_LSHIFT 64
-#define POS_RSHIFT 75
-
 / {
-	combos {
-		compatible = "zmk,combos";
-
-		/* Both Shift keys together: Caps Word. */
-		caps_word_combo {
-			key-positions = <POS_LSHIFT POS_RSHIFT>;
-			bindings = <&caps_word>;
-			timeout-ms = <40>;
-		};
-	};
-
 	keymap {
 		compatible = "zmk,keymap";
 

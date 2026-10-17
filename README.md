@@ -73,7 +73,7 @@ Full instructions, including recovery and going back to stock:
 ## Keymap
 
 Base is a plain 80% layout: every key does what it says, Caps is Caps Lock, and
-there are no hold-taps. All the extras sit behind the **Fn** key, which is a
+there are no hold-taps or combos. All the extras sit behind the **Fn** key, which is a
 plain hold, and every layer can be edited in VIA.
 
 **Hold Fn**
@@ -106,9 +106,6 @@ and `- + = * /` on P ; ' [ ]. Left hand: `~ ! @ # $` on Q-T, `( ) { } |` on A-G,
 Ins Home PgUp = `4 5 6`, Del End PgDn = `1 2 3`, and F13 PrtSc ScrLk Pause = `0 7 8 9`.
 Hold Space as well to reach the **Macro** layer (layer 5): P plays macro 0 (edit it in VIA).
 The right Win key does not type Win; the left one does.
-
-**Both Shift keys together:** Caps Word (capitals until the next space or punctuation).
-It is a combo, so ZMK holds a Shift press back for up to 40 ms to see if the other one follows.
 
 **Mac mode (Fn+M):** Win and Alt swap to give Ctrl Opt Cmd in Apple's order, PrtSc
 takes a Cmd+Shift+4 screenshot, and Home / End move to the start / end of the line.
