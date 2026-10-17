@@ -164,7 +164,7 @@ Pinout, LED chain, flash map and stock-firmware notes:
 | Fn+Esc → recovery | Erases the image header so MCUboot stays in USB recovery; works (confirmed on hardware). Fallback: `scripts/force_recovery.py` ([details](docs/flashing.md#update-a-keyboard-that-runs-zmk)) |
 | 2.4 GHz dongle | Not supported: proprietary protocol, no open implementation exists |
 | Battery percentage | Reads; scaling not yet calibrated on this board |
-| Timers | Run about 6% fast: 1000 ms of firmware time is about 940 ms real (measured against the host over 20 s), so tapping terms, macro delays and idle timeouts are that much shorter. The 32 kHz clock is calibrated at boot (`soc.c`) yet still reads fast; cause not found |
+| Timers | Accurate (`CONFIG_SYS_CLOCK_TICKS_PER_SEC=8000`); until then they ran 6.7% fast, an integer-division error in Zephyr's tick length, so older notes about shortened tapping terms and delays no longer apply |
 
 ## Repository layout
 
