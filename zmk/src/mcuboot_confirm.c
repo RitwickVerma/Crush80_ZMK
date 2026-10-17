@@ -151,7 +151,7 @@ static int mcuboot_confirm_init(void)
 		LOG_INF("WDT fed at APPLICATION — %d ms until revert",
 			CONFIRM_WDT_TIMEOUT_MS);
 	}
-	LOG_INF("Rainy 75 Pro — build %s", BUILD_GIT_VERSION);
+	LOG_INF("Crush 80 ZMK — build %s", BUILD_GIT_VERSION);
 	/* Schedule confirmation after delay — gives USB + BLE time to init */
 	k_work_schedule(&confirm_work, K_MSEC(CONFIRM_DELAY_MS));
 	return 0;

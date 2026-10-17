@@ -31,7 +31,7 @@ opening it.
 
 ## Features
 
-- **Full keyboard over USB and Bluetooth LE**: 88-key ANSI matrix (F13 included), three
+- **Full keyboard over USB and Bluetooth LE**: 88-key ANSI matrix (F13 included), five
   Bluetooth profiles, USB/BLE output switching, deep sleep with key wakeup.
 - **154 per-key RGB LEDs**: WS2812-class chain driven by SPI + DMA, with the
   `rainy_rgb` engine (12 effects, reactive ripples and heatmap, Caps Lock and
@@ -73,7 +73,7 @@ Full instructions, including recovery and going back to stock:
 ## Keymap
 
 Base is a plain 80% layout: every key does what it says, Caps is Caps Lock, and
-nothing waits on a timer. All the extras sit behind the **Fn** key, which is a
+there are no hold-taps. All the extras sit behind the **Fn** key, which is a
 plain hold, and every layer can be edited in VIA.
 
 **Hold Fn**
@@ -92,8 +92,7 @@ plain hold, and every layer can be edited in VIA.
 | F12 | Unlock ZMK Studio | Esc | Bootloader (see known issues) |
 
 Shift, Ctrl, Alt and Cmd keep working with these, so Shift+Fn+L selects a
-character and Shift+Fn+D selects a word. A D W S send Ctrl+arrows (Option+arrows
-in Mac mode). There is no real "sentence" keystroke in any OS; paragraph is the
+character and Shift+Fn+D selects a word. A D W S send Ctrl+arrows. There is no real "sentence" keystroke in any OS; paragraph is the
 closest, and it works in browsers, Word and most text fields.
 
 **Hold Fn and Space: numpad and symbols**
@@ -102,7 +101,14 @@ Right hand: `7 8 9` on U I O, `4 5 6` on J K L, `1 2 3` on M , ., `0` on N, `.` 
 and `- + = * /` on P ; ' [ ]. Left hand: `~ ! @ # $` on Q-T, `( ) { } |` on A-G,
 `[ ] < > \` on Z-B.
 
+**Hold the right Win key: numpad on the nav cluster**
+
+Ins Home PgUp = `4 5 6`, Del End PgDn = `1 2 3`, and F13 PrtSc ScrLk Pause = `0 7 8 9`.
+Hold Space as well to reach the **Macro** layer (layer 5): P plays macro 0 (edit it in VIA).
+The right Win key does not type Win; the left one does.
+
 **Both Shift keys together:** Caps Word (capitals until the next space or punctuation).
+It is a combo, so ZMK holds a Shift press back for up to 40 ms to see if the other one follows.
 
 **Mac mode (Fn+M):** Win and Alt swap to give Ctrl Opt Cmd in Apple's order, PrtSc
 takes a Cmd+Shift+4 screenshot, and Home / End move to the start / end of the line.
@@ -123,7 +129,7 @@ The keymap is [`config/crush80.keymap`](config/crush80.keymap). Ways to change i
   hold-tap timings are not available there.
 - **[ZMK Studio](https://zmk.studio)** (Bluetooth): open it in Chrome or Edge,
   connect to the keyboard, then press Fn+F12 to unlock. Studio can also add up to
-  three new layers (VIA shows the same three as spare layers 5-7). Combos, macros and hold-tap timings are not editable there
+  three new layers (VIA shows the same three as spare layers 6-8). Combos, macros and hold-tap timings are not editable there
   either.
 - **The keymap file**: edit it, or point `CRUSH80_KEYMAP` at your own file, then
   reflash with `python3 scripts/force_recovery.py`, replug USB,

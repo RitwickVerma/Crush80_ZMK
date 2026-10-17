@@ -2,11 +2,12 @@
  * Wobkey Crush 80 — ZMK keymap
  *
  * Base is a plain 80% layout: every key does what it says, Caps is Caps Lock, and
- * nothing waits on a timer (no hold-taps anywhere). Everything extra sits behind
- * the Fn key, which is a plain hold, and every layer here can be edited in VIA.
+ * there are no hold-taps (the only timed thing is the 40 ms
+ * Shift+Shift combo). Everything extra sits behind the Fn key, which is a plain hold, and every layer here can be edited in VIA.
  *
- *   hold Fn              system controls + navigation (the IJKL cluster)
+ *   hold Fn              system controls + navigation (the HJKL cluster)
  *   hold Fn and Space    numpad and bracket symbols
+ *   hold right Win       numpad on the nav cluster; add Space for the Macro layer (P)
  *   Fn+M                 Mac mode on / off (modifiers in Mac order, Cmd shortcuts)
  *   Shift + Shift        Caps Word (capitals until the next space or punctuation)
  *
@@ -104,7 +105,7 @@
 		 *   connection   1 2 3 6 7 Bluetooth 1-5   4 USB   5 toggle USB/Bluetooth   Del clear BT pairing
 		 *   RGB          Bspc on/off   - = speed   [ ] hue   \ Enter effect   Up/Down brightness   B battery
 		 *   modes        M Mac mode
-		 *   navigation   I J K L arrows   U O Home End   Y N PgUp PgDn   H Bspc   ; Del
+		 *   navigation   H J K L arrows   U O Home End   Y N PgUp PgDn   X Bspc   ; Del
 		 *   jumps        A D word left / right   W S paragraph up / down
 		 *   Space        hold for the Num layer
 		 *
@@ -145,7 +146,7 @@
 		};
 
 		/*
-		 * Layer 4: Num (hold Fn and Space). Above Fn so it can reuse the IJKL block.
+		 * Layer 4: Num (hold Fn and Space). Above Fn so it can reuse the HJKL block.
 		 *
 		 *   right hand  7 8 9 -  /  4 5 6 + =  /  0 1 2 3 .      [ * ]  /  Enter
 		 *   left hand   ~ ! @ # $  /  ( ) { } |  /  [ ] < > \
@@ -164,7 +165,7 @@
 		};
 
 		/*
-		 * Layer 5: Macro (Mac mode + Fn + Space). P plays macro 0 (edit it in VIA).
+		 * Layer 5: Macro (hold right Win, then Space). P plays macro 0 (edit it in VIA).
 		 * A real layer, not a spare one: ZMK only looks up keys in layers that are
 		 * in the keymap file, so a macro key on a reserved spare layer never fires.
 		 */

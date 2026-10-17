@@ -20,6 +20,11 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# setup.sh installs the Python tools (hidapi, pyserial, cbor2) into the workspace
+# venv, not the system Python; use it when it exists.
+_venv="${CRUSH80_WORKSPACE:-$HOME/Projects/crush80-workspace}/.venv/bin"
+[[ -d "$_venv" ]] && PATH="$_venv:$PATH"
+
 # ── Colors (disabled when stdout is not a terminal) ──────────
 if [[ -t 1 ]]; then
     BOLD='\033[1m' RED='\033[0;31m' GREEN='\033[0;32m'
