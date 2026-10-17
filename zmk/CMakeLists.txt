@@ -88,13 +88,19 @@ if(CONFIG_ZMK_BLE)
   )
 endif()
 
-execute_process(
-  COMMAND git describe --always --dirty
-  WORKING_DIRECTORY ${ZEPHYR_BASE}/..
-  OUTPUT_VARIABLE BUILD_GIT_VERSION
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-  ERROR_QUIET
-)
+# The module is built from a copy inside the west workspace, which is not a git
+# repository, so build.sh passes the version of the real repository.
+if(DEFINED ENV{CRUSH80_GIT_VERSION})
+  set(BUILD_GIT_VERSION "$ENV{CRUSH80_GIT_VERSION}")
+else()
+  execute_process(
+    COMMAND git describe --always --dirty
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE BUILD_GIT_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+endif()
 if(NOT BUILD_GIT_VERSION)
   set(BUILD_GIT_VERSION "unknown")
 endif()

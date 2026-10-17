@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/settings/settings.h>
@@ -34,7 +33,16 @@ static int rev_set(const char *name, size_t len, settings_read_cb read_cb, void 
     return 0;
 }
 
-SETTINGS_STATIC_HANDLER_DEFINE(crush80, "crush80", NULL, rev_set, NULL, NULL);
+static void migrate_fn(struct k_work *work);
+static K_WORK_DEFINE(migrate_work, migrate_fn);
+
+/* Called once settings_load() has read everything (main(), after this file's init). */
+static int rev_commit(void) {
+    k_work_submit(&migrate_work);
+    return 0;
+}
+
+SETTINGS_STATIC_HANDLER_DEFINE(crush80, "crush80", NULL, rev_set, rev_commit, NULL);
 
 /* What the keymap settings subtree currently holds. */
 static struct {
@@ -81,40 +89,39 @@ static void migrate_fn(struct k_work *work) {
     memset(&found, 0, sizeof(found));
     settings_load_subtree_direct("keymap", collect, NULL);
 
-    unsigned deleted = 0;
+    unsigned deleted = 0, failed = 0;
     char name[24];
 
     for (unsigned l = 0; l < MAX_LAYERS; l++) {
         for (unsigned p = 0; p < MAX_POS; p++) {
             if (found.bind[l][p / 8] & BIT(p % 8)) {
                 snprintf(name, sizeof(name), "keymap/l/%u/%u", l, p);
-                deleted += settings_delete(name) == 0;
+                settings_delete(name) == 0 ? deleted++ : failed++;
             }
         }
         if (found.names & BIT(l)) {
             snprintf(name, sizeof(name), "keymap/l_n/%u", l);
-            deleted += settings_delete(name) == 0;
+            settings_delete(name) == 0 ? deleted++ : failed++;
         }
     }
     if (found.order) {
-        deleted += settings_delete("keymap/layer_order") == 0;
+        settings_delete("keymap/layer_order") == 0 ? deleted++ : failed++;
     }
 
-    zmk_keymap_discard_changes(); /* reload crush80.keymap into RAM */
+    int err = zmk_keymap_discard_changes(); /* reload crush80.keymap into RAM */
 
-    if (settings_save_one(REV_KEY, &rev, sizeof(rev)) == 0) {
+    if (err) {
+        LOG_ERR("could not reload the built-in keymap (%d)", err);
+    }
+    /* Without the new revision the next boot tries again; saving it over a partial
+     * delete would leave old edits behind for good. */
+    if (failed) {
+        LOG_ERR("%u saved edits could not be deleted, keymap revision not updated", failed);
+    } else if (settings_save_one(REV_KEY, &rev, sizeof(rev)) == 0) {
         LOG_INF("keymap revision %d (was %d): cleared %u saved edits", rev, stored_rev, deleted);
+        stored_rev = rev; /* a later settings commit must not run this again */
     } else {
         LOG_ERR("could not save the keymap revision");
     }
 }
 
-static K_WORK_DELAYABLE_DEFINE(migrate_work, migrate_fn);
-
-/* settings_load() runs from main(), after this; wait for it. */
-static int keymap_rev_init(void) {
-    k_work_schedule(&migrate_work, K_SECONDS(2));
-    return 0;
-}
-
-SYS_INIT(keymap_rev_init, APPLICATION, 99);

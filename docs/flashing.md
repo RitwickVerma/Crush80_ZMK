@@ -41,7 +41,9 @@ there; rerun the command `install_zmk.sh` prints.
    (USB `2fe3:0100`):
 
    ```bash
-   pip install dbus-fast cbor2
+   # needs dbus-fast and cbor2, which setup.sh puts in the workspace venv
+   # (a system-wide pip install is refused on Arch, Debian and Homebrew Pythons):
+   source ~/Projects/crush80-workspace/.venv/bin/activate
    python3 scripts/force_recovery.py      # over Bluetooth, then unplug and replug USB
    ```
 
@@ -79,7 +81,9 @@ erases one 4 KB sector, the header of the running image, so that MCUboot finds
 no app on the next power-up and stays in USB recovery:
 
 ```bash
-pip install dbus-fast cbor2
+# needs dbus-fast and cbor2, which setup.sh puts in the workspace venv
+# (a system-wide pip install is refused on Arch, Debian and Homebrew Pythons):
+source ~/Projects/crush80-workspace/.venv/bin/activate
 python3 scripts/force_recovery.py --backup my-current-firmware.signed.bin
 # unplug and replug USB -> ZEPHYR MCUBOOT appears
 python3 scripts/dfu.py dist/crush80-zmk-app.signed.bin

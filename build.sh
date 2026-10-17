@@ -39,20 +39,23 @@ done
 # overwritten (copying over it once destroyed uncommitted keymap work).
 DOTFILES_ZMK="${CRUSH80_ZMK_CONFIG:-$HOME/.config/DOTFILES/keybindings/crush80-zmk}"
 KEYMAP_SRC="$REPO_DIR/config/crush80.keymap"
+APP_CONF_SRC="$REPO_DIR/conf/app.conf"
 
-if [ -n "${CRUSH80_KEYMAP:-}" ] && [ -f "$CRUSH80_KEYMAP" ]; then
+if [ -n "${CRUSH80_KEYMAP:-}" ]; then
+    [ -f "$CRUSH80_KEYMAP" ] || { echo "ERROR: CRUSH80_KEYMAP is not a file: $CRUSH80_KEYMAP" >&2; exit 1; }
     KEYMAP_SRC="$CRUSH80_KEYMAP"
-    # If CRUSH80_APP_CONF is also set, use that
-    if [ -n "${CRUSH80_APP_CONF:-}" ] && [ -f "$CRUSH80_APP_CONF" ]; then
-        cp "$CRUSH80_APP_CONF" "$REPO_DIR/conf/app.conf"
-    fi
 elif [ -d "$DOTFILES_ZMK" ]; then
     echo "Syncing config from $DOTFILES_ZMK..."
     [ -f "$DOTFILES_ZMK/crush80.keymap" ] && KEYMAP_SRC="$DOTFILES_ZMK/crush80.keymap"
-    [ -f "$DOTFILES_ZMK/app.conf" ] && cp "$DOTFILES_ZMK/app.conf" "$REPO_DIR/conf/app.conf"
+    [ -f "$DOTFILES_ZMK/app.conf" ] && APP_CONF_SRC="$DOTFILES_ZMK/app.conf"
+fi
+if [ -n "${CRUSH80_APP_CONF:-}" ]; then
+    [ -f "$CRUSH80_APP_CONF" ] || { echo "ERROR: CRUSH80_APP_CONF is not a file: $CRUSH80_APP_CONF" >&2; exit 1; }
+    APP_CONF_SRC="$CRUSH80_APP_CONF"
 fi
 [ -f "$KEYMAP_SRC" ] || { echo "ERROR: keymap not found: $KEYMAP_SRC" >&2; exit 1; }
 echo "Using keymap: $KEYMAP_SRC"
+echo "Using app config: $APP_CONF_SRC"
 
 # ── Locate west workspace ────────────────────────────────────────────────────
 if [ -f "$REPO_DIR/.workspace_path" ]; then
@@ -130,7 +133,11 @@ echo "  Done."
 
 cd "$WORKSPACE_DIR"
 
-CONF="$REPO_DIR/conf/app.conf"
+# Shown in the boot log: the repository's version, not the workspace copy's.
+CRUSH80_GIT_VERSION="$(git -C "$REPO_DIR" describe --always --dirty 2>/dev/null || echo unknown)"
+export CRUSH80_GIT_VERSION
+
+CONF="$APP_CONF_SRC"
 OVERLAY="$WORKSPACE_DIR/conf/app.overlay"
 
 # Crush 80 specific overrides. CONFIG_ZMK_KEYBOARD_NAME repeats app.conf's
@@ -201,7 +208,12 @@ echo "Collecting artifacts to dist/..."
 DIST="$WORKSPACE_DIR/dist"
 mkdir -p "$DIST"
 
-rm -f "$DIST"/*.bin
+# Remove stale images, but keep the OTA bridge when it is not being rebuilt:
+# install_zmk.sh needs it, and --skip-bridge is what update.sh --build uses.
+for f in "$DIST"/*.bin; do
+    [ "$SKIP_BRIDGE" = true ] && [ "$(basename "$f")" = "crush80-ota-bridge.bin" ] && continue
+    rm -f "$f"
+done
 # OTA bridge, wrapped for the stock firmware's OTA handler (Telink header + CRC)
 if [ "$SKIP_BRIDGE" = false ]; then
     python3 "$REPO_DIR/scripts/prepare_ota.py" build-bridge/zephyr/zmk.bin \
@@ -224,7 +236,10 @@ fi
 
 # Also copy to repo dist/ for easy Windows access
 mkdir -p "$REPO_DIR/dist"
-rm -f "$REPO_DIR/dist/"*.bin
+for f in "$REPO_DIR/dist/"*.bin; do
+    [ "$SKIP_BRIDGE" = true ] && [ "$(basename "$f")" = "crush80-ota-bridge.bin" ] && continue
+    rm -f "$f"
+done
 cp "$DIST"/*.bin "$REPO_DIR/dist/" 2>/dev/null || true
 
 echo ""

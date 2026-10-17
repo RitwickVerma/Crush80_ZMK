@@ -4,12 +4,14 @@ The default keymap is [`config/crush80.keymap`](../../../config/crush80.keymap).
 [`keymaps/example.keymap`](../../../keymaps/example.keymap) is an alternative with
 home-row mods, hold-W navigation and a Sym layer (a different layer list, with
 its own Caps and Fn behaviour); build it with
-`CRUSH80_KEYMAP=keymaps/example.keymap bash build.sh`.
+`CRUSH80_KEYMAP=keymaps/example.keymap bash build.sh`. Its layer list differs, so
+raise `CONFIG_CRUSH80_KEYMAP_REV` (`zmk/Kconfig`) when switching either way, or live edits
+saved for the other layout will land on the wrong layers.
 
 ## Idea
 
 Base is a plain 80% layout: every key does what it says and Caps is Caps Lock.
-Nothing waits on a timer (there is not a single hold-tap), and every layer can be
+There is not a single hold-tap (the only timed thing is the 40 ms Shift+Shift combo), and every layer can be
 edited in VIA, because everything used is a plain layer key, a toggle or a key.
 Extras sit behind the Fn key.
 
@@ -24,7 +26,7 @@ The numbers are what VIA and ZMK Studio show. Live edits are saved by number.
 | 2 | Fn | hold Fn |
 | 3 | MacFn | hold right Win (numpad on the nav cluster) |
 | 4 | Num | hold Fn and Space |
-| 5 | Macro | Mac mode + Fn + Space; P plays macro 0 |
+| 5 | Macro | hold right Win, then Space; P plays macro 0 |
 | 6-8 | spare | empty; VIA lists them, ZMK Studio can fill them |
 
 ZMK looks up a key in the highest active layer first, so the order is deliberate:
@@ -56,7 +58,7 @@ Word and most text fields (some editors, such as VS Code, use Ctrl+Up / Down to
 scroll instead).
 
 F1-F11 are not bound on Fn, so Fn+F-key is the plain F-key. Modifiers pass
-through: Shift+Fn+L selects, Shift+Fn+D selects a word, Alt+Fn+J goes back.
+through: Shift+Fn+L selects, Shift+Fn+D selects a word, Alt+Fn+H goes back.
 
 The keys light up while you hold Fn. Every bound key is white; the active Bluetooth
 profile is blue (orange while it waits for a host), the USB key is green when USB is
