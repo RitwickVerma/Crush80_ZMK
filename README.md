@@ -89,7 +89,7 @@ plain hold, and every layer can be edited in VIA.
 | End / PgDn | Volume down / brightness down | Bspc | RGB on / off |
 | \ or Enter | Next RGB effect | [ ] / - = | RGB hue / speed |
 | ↑ / ↓ | RGB brightness | B | Show battery level |
-| F12 | Unlock ZMK Studio | Esc | Bootloader (see known issues) |
+| F12 | Unlock ZMK Studio | Esc | Recovery mode (see [flashing](docs/flashing.md)) |
 
 Shift, Ctrl, Alt and Cmd keep working with these, so Shift+Fn+L selects a
 character and Shift+Fn+D selects a word. A D W S send Ctrl+arrows. There is no real "sentence" keystroke in any OS; paragraph is the
@@ -161,7 +161,7 @@ Pinout, LED chain, flash map and stock-firmware notes:
 | Updates over USB (`update.sh` / `dfu.py`) | Working: 290 KB in 11 s |
 | ZMK Studio | Over Bluetooth (the USB serial port was dropped so OpenRGB sees the keyboard) |
 | VIA (keys, layers, 16 macros) | Working over USB, checked against the real app on Linux; not yet tried on macOS or Windows ([docs/via.md](docs/via.md)) |
-| Fn+Esc → bootloader | **Known issue**: reboots into the app instead. Use `scripts/force_recovery.py` ([details](docs/flashing.md#update-a-keyboard-that-runs-zmk)) |
+| Fn+Esc → recovery | Erases the image header so MCUboot stays in USB recovery; built, **not yet confirmed on hardware**. Fallback: `scripts/force_recovery.py` ([details](docs/flashing.md#update-a-keyboard-that-runs-zmk)) |
 | 2.4 GHz dongle | Not supported: proprietary protocol, no open implementation exists |
 | Battery percentage | Reads; scaling not yet calibrated on this board |
 | Timers | Run about 6% fast: 1000 ms of firmware time is about 940 ms real (measured against the host over 20 s), so tapping terms, macro delays and idle timeouts are that much shorter. The 32 kHz clock is calibrated at boot (`soc.c`) yet still reads fast; cause not found |
@@ -176,6 +176,7 @@ conf/             build configuration (app, MCUboot, install bridge)
 patches/          fixes to Zephyr, ZMK, MCUboot and hal_telink, applied by setup.sh
 keymaps/          stock and home-row-mods keymaps
 scripts/          dfu.py (updates), force_recovery.py, OTA + install tools
+                  host tests of the firmware logic: bash zmk/tests/run_host_tests.sh
 docs/             hardware notes, flashing and recovery guide, photos
 ```
 

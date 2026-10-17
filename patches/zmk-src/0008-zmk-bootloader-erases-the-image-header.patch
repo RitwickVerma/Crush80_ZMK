@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ritwick Verma <verma1997@gmail.com>
+Date: Sat, 17 Oct 2026 00:00:00 -0700
+Subject: [PATCH] zmk: &bootloader erases the image header instead of setting
+ the retained boot mode
+
+The boot-mode flag in retained RAM does not survive this chip's reset, so MCUboot
+never saw it and Fn+Esc just rebooted into the app. With
+CONFIG_CRUSH80_RECOVERY_KEY the bootloader behavior calls
+crush80_enter_recovery(), which erases the slot 0 header sector (what
+scripts/force_recovery.py does over Bluetooth) so MCUboot stays in serial recovery.
+---
+diff --git a/app/src/behaviors/behavior_reset.c b/app/src/behaviors/behavior_reset.c
+index 67f33aae..15e9d271 100644
+--- a/app/src/behaviors/behavior_reset.c
++++ b/app/src/behaviors/behavior_reset.c
+@@ -20,6 +20,10 @@
+ 
+ #endif /* IS_ENABLED(CONFIG_RETENTION_BOOT_MODE) */
+ 
++#if IS_ENABLED(CONFIG_CRUSH80_RECOVERY_KEY) && IS_ENABLED(CONFIG_RETENTION_BOOT_MODE)
++#include <crush80_recovery.h>
++#endif
++
+ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
+ 
+ #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
+@@ -36,6 +40,14 @@ static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
+     const struct device *dev = zmk_behavior_get_binding(binding->behavior_dev);
+     const struct behavior_reset_config *cfg = dev->config;
+ 
++#if IS_ENABLED(CONFIG_CRUSH80_RECOVERY_KEY) && IS_ENABLED(CONFIG_RETENTION_BOOT_MODE)
++    if (cfg->boot_mode == BOOT_MODE_TYPE_BOOTLOADER) {
++        /* The retained boot-mode flag does not survive this chip's reset. */
++        crush80_enter_recovery(); /* returns only if it failed */
++        return ZMK_BEHAVIOR_OPAQUE;
++    }
++#endif
++
+ #if IS_ENABLED(CONFIG_RETENTION_BOOT_MODE)
+     int ret = bootmode_set(cfg->boot_mode);
+     if (ret < 0) {

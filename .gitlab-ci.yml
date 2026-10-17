@@ -1,0 +1,38 @@
+# Checks that need no Zephyr SDK, so they fit the small shared runner: the host tests
+# (VIA keycode translation, macro player, keymap-revision migration, built with
+# AddressSanitizer) and a syntax pass over the shell and Python tooling. The firmware
+# build itself (about 10 GB with the toolchain) stays local: bash build.sh.
+#
+# Run the same tests locally: bash zmk/tests/run_host_tests.sh
+
+image: debian:stable-slim
+
+stages: [check]
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+host-tests:
+  stage: check
+  script:
+    - apt-get update -qq
+    - apt-get install -y -qq --no-install-recommends git ca-certificates gcc libc6-dev libasan8 libubsan1 > /dev/null
+    # The tests need only ZMK's dt-bindings headers, at the commit pinned in west.yml.
+    - |
+      ZMK_REV=$(grep -A4 'name: zmk$' zmk/west.yml | sed -n 's/.*revision: *//p')
+      echo "ZMK $ZMK_REV"
+      git init -q /tmp/zmk-src
+      git -C /tmp/zmk-src fetch -q --depth 1 https://github.com/zmkfirmware/zmk.git "$ZMK_REV"
+      git -C /tmp/zmk-src checkout -q FETCH_HEAD
+    - ZMK_INCLUDE=/tmp/zmk-src/app/include bash zmk/tests/run_host_tests.sh
+
+scripts:
+  stage: check
+  script:
+    - apt-get update -qq
+    - apt-get install -y -qq --no-install-recommends python3 shellcheck > /dev/null
+    - for f in *.sh patches/*.sh zmk/tests/*.sh; do bash -n "$f"; done
+    - shellcheck --severity=error *.sh patches/*.sh zmk/tests/*.sh
+    - python3 -m py_compile scripts/*.py

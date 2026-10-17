@@ -39,7 +39,7 @@ layout on first boot.
 ## Fn
 
 ```
- Esc  bootloader      F12 Studio unlock      PrtSc Mute  ScrLk Vol+  Pause Bri+
+ Esc  recovery        F12 Studio unlock      PrtSc Mute  ScrLk Vol+  Pause Bri+
  1 2 3 6 7  Bluetooth profiles 1-5    4 USB    5 toggle USB / Bluetooth
  Bspc RGB on/off   - = RGB speed   [ ] hue   \ Enter next effect   Up Down brightness
  Ins Prev   Home Play   PgUp Next       End Vol-   PgDn Bri-      Del clear BT pairing

@@ -100,7 +100,7 @@
 		 * Layer 2: Fn (hold). The highest of the layers you hold, so nothing above it
 		 * can hide these keys.
 		 *
-		 *   system       Esc bootloader   F12 Studio unlock   PrtSc/ScrLk/Pause mute vol+ bri+
+		 *   system       Esc recovery     F12 Studio unlock   PrtSc/ScrLk/Pause mute vol+ bri+
 		 *                Ins/Home/PgUp prev play next   End/PgDn vol- bri-
 		 *   connection   1 2 3 6 7 Bluetooth 1-5   4 USB   5 toggle USB/Bluetooth   Del clear BT pairing
 		 *   RGB          Bspc on/off   - = speed   [ ] hue   \ Enter effect   Up/Down brightness   B battery
