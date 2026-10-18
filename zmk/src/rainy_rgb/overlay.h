@@ -11,9 +11,6 @@ void rrgb_overlay_set_caps(bool on);
  * white for a bound key and a state colour for keys that show state. */
 #define RRGB_FN_POSITIONS 88
 void rrgb_overlay_set_fn(bool active, const struct rrgb *fn_colors);
-/* Editing mode (Vim / Visual / operator pending): Esc and H J K L glow in this colour
- * while it is not black. Set from the layer state, so the mode is always visible. */
-void rrgb_overlay_set_mode(struct rrgb color);
 void rrgb_overlay_set_battery(uint8_t pct);
 void rrgb_overlay_battery_show(uint32_t tick);   /* start the ~3s gauge window */
 
