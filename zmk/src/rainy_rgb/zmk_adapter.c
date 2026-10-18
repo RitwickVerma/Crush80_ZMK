@@ -110,32 +110,12 @@ static void fn_overlay_update(void) {
     rrgb_overlay_set_fn(true, colors);
 }
 
-static bool layer_named_active(const char *name) {
-    int id = layer_id_by_name(name);
-
-    return id >= 0 && zmk_keymap_layer_active((zmk_keymap_layer_id_t)id);
-}
-
-/* The editing mode shows on Esc and H J K L (see the Vim layers in the keymap). */
-static void mode_overlay_update(void) {
-    struct rrgb c = {0, 0, 0};
-
-    if (layer_named_active("OpD") || layer_named_active("OpY") || layer_named_active("OpC")) {
-        c = (struct rrgb){255, 170, 0};      /* d / y / c waiting for its second key */
-    } else if (layer_named_active("Visual")) {
-        c = (struct rrgb){255, 0, 200};
-    } else if (layer_named_active("Vim")) {
-        c = (struct rrgb){0, 200, 255};
-    }
-    rrgb_overlay_set_mode(c);
-}
-
 static int rrgb_event_listener(const zmk_event_t *eh) {
     const struct zmk_position_state_changed *ev = as_zmk_position_state_changed(eh);
     if (ev) { rrgb_on_key(ev->position, ev->state); }
 
     const struct zmk_layer_state_changed *lev = as_zmk_layer_state_changed(eh);
-    if (lev) { fn_overlay_update(); mode_overlay_update(); }
+    if (lev) { fn_overlay_update(); }
 
     if (as_zmk_endpoint_changed(eh) || as_zmk_ble_active_profile_changed(eh)) { fn_overlay_update(); }
 
