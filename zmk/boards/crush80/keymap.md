@@ -27,7 +27,10 @@ The numbers are what VIA and ZMK Studio show. Live edits are saved by number.
 | 3 | MacFn | hold right Win (numpad on the nav cluster) |
 | 4 | Num | hold Fn and Space |
 | 5 | Macro | hold right Win, then Space; P plays macro 0 |
-| 6-8 | spare | empty; VIA lists them, ZMK Studio can fill them |
+| 6 | Vim | Fn+V toggles it: vim's normal mode in any text field (see the table in the README) |
+| 7 | Visual | `v` in Vim: motions select, `y d c p` act on the selection |
+| 8-10 | OpD, OpY, OpC | `d` `y` `c` in Vim; each lasts one key (a sticky layer) |
+| 11-13 | spare | empty; VIA lists them, ZMK Studio can fill them |
 
 ZMK looks up a key in the highest active layer first, so the order is deliberate:
 Fn above Mac (so Mac cannot hide Fn's keys), MacFn above Fn and Num above MacFn
@@ -43,7 +46,7 @@ layout on first boot.
  1 2 3 6 7  Bluetooth profiles 1-5    4 USB    5 toggle USB / Bluetooth
  Bspc RGB on/off   - = RGB speed   [ ] hue   \ Enter next effect   Up Down brightness
  Ins Prev   Home Play   PgUp Next       End Vol-   PgDn Bri-      Del clear BT pairing
- B battery   M Mac mode
+ B battery   M Mac mode   V Vim mode
 
         Y PgUp   U Home             O End
         H Left   J Down   K Up      L Right    ; Del      X Bspc
