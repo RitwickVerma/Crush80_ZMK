@@ -48,8 +48,11 @@ static void boot(int stored) { /* what main() does: load the revision, then comm
     } else {
         stored_rev = -1;
     }
+    mock_lock_held = 1; /* the commit handler runs under the settings lock ... */
     crush80_commit_handler();
-    mock_advance(10);
+    mock_advance(100); /* ... and the system work queue runs at once meanwhile */
+    mock_lock_held = 0;
+    mock_advance(10000);
 }
 
 static void fresh(void) {
@@ -86,6 +89,7 @@ static void test_clean_migration(void) {
     fresh();
     populate_old_layout();
     boot(2);
+    CHECK(mock_deadlocks == 0, "migration touched settings while the commit handler held the lock");
     CHECK(mock_deleted_count == 6, "deleted %d, want 6", mock_deleted_count);
     CHECK(!mock_store_has("keymap/l/7/12") && !mock_store_has("keymap/layer_order"), "edits left");
     CHECK(mock_store_has("via_macro/buf") && mock_store_has("rgb/state"), "other data touched");

@@ -18,6 +18,10 @@ extern int mock_delete_fail_count;
 extern char mock_deleted[MOCK_MAX_SETTINGS][48];
 extern int mock_deleted_count;
 extern int mock_saved_count;
+/* Zephyr runs settings commit handlers while holding the settings lock. A settings call
+ * made from another thread while it is held would block until the handler returns. */
+extern int mock_lock_held;
+extern int mock_deadlocks;
 extern void (*mock_on_save)(const char *name, const void *value, size_t len);
 
 void mock_store_put(const char *name, const void *value, size_t len);
