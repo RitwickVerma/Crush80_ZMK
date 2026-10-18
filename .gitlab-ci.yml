@@ -1,6 +1,6 @@
 # Checks that need no Zephyr SDK, so they fit the small shared runner: the host tests
 # (VIA keycode translation, macro player, keymap-revision migration, built with
-# AddressSanitizer) and a syntax pass over the shell and Python tooling. The firmware
+# AddressSanitizer, and the static keymap check) and a syntax pass over the shell and Python tooling. The firmware
 # build itself (about 10 GB with the toolchain) stays local: bash build.sh.
 #
 # Run the same tests locally: bash zmk/tests/run_host_tests.sh
@@ -18,7 +18,7 @@ host-tests:
   stage: check
   script:
     - apt-get update -qq
-    - apt-get install -y -qq --no-install-recommends git ca-certificates gcc libc6-dev libasan8 libubsan1 > /dev/null
+    - apt-get install -y -qq --no-install-recommends git ca-certificates gcc libc6-dev libasan8 libubsan1 python3 > /dev/null
     # The tests need only ZMK's dt-bindings headers, at the commit pinned in west.yml.
     - |
       ZMK_REV=$(grep -A4 'name: zmk$' zmk/west.yml | sed -n 's/.*revision: *//p')

@@ -23,13 +23,13 @@ The numbers are what VIA and ZMK Studio show. Live edits are saved by number.
 |---|---|---|
 | 0 | Base | always on |
 | 1 | Mac | Fn+M (toggle) |
-| 2 | Fn | hold Fn |
-| 3 | MacFn | hold right Win (numpad on the nav cluster) |
-| 4 | Num | hold Fn and Space |
-| 5 | Macro | hold right Win, then Space; P plays macro 0 |
-| 6 | Vim | Fn+V toggles it: vim's normal mode in any text field (see the table in the README) |
-| 7 | Visual | `v` in Vim: motions select, `y d c p` act on the selection |
-| 8-10 | OpD, OpY, OpC | `d` `y` `c` in Vim; each lasts one key (a sticky layer) |
+| 2 | Vim | Fn+V toggles it: vim's normal mode in any text field (see the table in the README) |
+| 3 | Visual | `v` in Vim: motions select, `y d c p` act on the selection |
+| 4-6 | OpD, OpY, OpC | `d` `y` `c` in Vim; each lasts one key (a sticky layer) |
+| 7 | Fn | hold Fn |
+| 8 | MacFn | hold right Win (numpad on the nav cluster) |
+| 9 | Num | hold Fn and Space |
+| 10 | Macro | hold right Win, then Space; P plays macro 0 |
 | 11-13 | spare | empty; VIA lists them, ZMK Studio can fill them |
 
 ZMK looks up a key in the highest active layer first, so the order is deliberate:
@@ -82,12 +82,12 @@ Only what differs on a Mac: the left Win and Alt swap, and so do right Alt and S
 Win key is left alone: it is the key that holds MacFn, your numpad), giving
 Ctrl Opt Cmd Space Cmd in Apple's order. PrtSc is Cmd+Shift+4 (screenshot a
 region), Home and End are Cmd+Left and Cmd+Right (start and end of line, as on
-Windows and Linux). Layer 3 (right Win) holds the numpad on the nav cluster; its
-Space key holds layer 5 (Macro).
+Windows and Linux). Layer 8 (right Win) holds the numpad on the nav cluster; its
+Space key holds layer 10 (Macro).
 
 Layers stack: ZMK keeps a set of active layers and looks each key up from the highest one
 down, with transparent keys falling through, so right Win, then Space, then P reads P from
-layer 5. A ZMK *conditional layer* is the one thing to avoid for a layer you hold by hand:
+layer 10. A ZMK *conditional layer* is the one thing to avoid for a layer you hold by hand:
 it re-checks its rule on every layer change and switches the layer off whenever the rule
 is false, which is what once made right Win dead.
 
@@ -100,7 +100,7 @@ undo it.
 
 ## Your layout changes
 
-The right Win key holds MacFn (layer 3), which in practice is a numpad on the nav
+The right Win key holds MacFn (layer 8), which in practice is a numpad on the nav
 cluster (Ins Home PgUp = 4 5 6, Del End PgDn = 1 2 3, and so on); Space on it holds
 the Macro layer. These came from live edits and are now in the file. The Mac layer
 used to turn the right Win key into Right Alt, which broke that numpad whenever Mac mode

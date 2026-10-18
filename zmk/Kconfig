@@ -44,7 +44,7 @@ config RAINY_RGB
 
 config CRUSH80_KEYMAP_REV
 	int "Keymap layout revision"
-	default 3
+	default 4
 	depends on ZMK_KEYMAP_SETTINGS_STORAGE
 	help
 	  Live edits made in VIA or ZMK Studio are stored per layer number. When the

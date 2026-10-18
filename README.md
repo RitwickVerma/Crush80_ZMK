@@ -104,7 +104,7 @@ and `- + = * /` on P ; ' [ ]. Left hand: `~ ! @ # $` on Q-T, `( ) { } |` on A-G,
 **Hold the right Win key: numpad on the nav cluster**
 
 Ins Home PgUp = `4 5 6`, Del End PgDn = `1 2 3`, and F13 PrtSc ScrLk Pause = `0 7 8 9`.
-Hold Space as well to reach the **Macro** layer (layer 5): P plays macro 0 (edit it in VIA).
+Hold Space as well to reach the **Macro** layer (layer 10): P plays macro 0 (edit it in VIA).
 The right Win key does not type Win; the left one does.
 
 **Vim editing (Fn+V toggles it):** vim's normal mode in any text field, not only in vim. Esc and
@@ -125,7 +125,8 @@ second key). Keys with no meaning do nothing, so you cannot type by accident.
 In visual mode h j k l w b 0 4 g extend the selection; y copies, d or x cuts, c cuts and types, p pastes
 over it, v or Esc cancels. Ctrl, Alt and Win shortcuts keep working in every vim mode (Ctrl+C is still copy).
 Differences from real vim: no counts, `gg` is a single `g`, `4` is `$`, and the shortcuts are the Windows and
-Linux ones (Ctrl), so on a Mac mode use them by hand.
+Linux ones (Ctrl), so on a Mac mode use them by hand. Do not use it in a terminal, where `y` and `d` send Ctrl+C and Ctrl+X, which
+are interrupt and a shell key there.
 
 **Mac mode (Fn+M):** Win and Alt swap to give Ctrl Opt Cmd in Apple's order, PrtSc
 takes a Cmd+Shift+4 screenshot, and Home / End move to the start / end of the line.

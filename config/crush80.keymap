@@ -9,16 +9,16 @@
  *   hold Fn and Space    numpad and bracket symbols
  *   hold right Win       numpad on the nav cluster; add Space for the Macro layer (P)
  *   Fn+M                 Mac mode on / off (modifiers in Mac order, Cmd shortcuts)
- *   Fn+V                 Vim editing on / off (layer 6: hjkl, dd, yy, p, u, v ...)
+ *   Fn+V                 Vim editing on / off (layers 2-6: hjkl, dd, yy, p, u, v ...)
  *
  * Layers (the number is what VIA and ZMK Studio show)
- *   0 Base    1 Mac     2 Fn      3 MacFn   4 Num     5 Macro   6 Vim     7 Visual
- *   8-10 operator layers (d y c, last one key)   11-13 spare (empty, yours)
+ *   0 Base    1 Mac     2 Vim     3 Visual  4-6 OpD OpY OpC (d y c, last one key)
+ *   7 Fn      8 MacFn   9 Num     10 Macro  11-13 spare (empty, yours)
  *
- * The order matters, and it is checked by ZMK from the highest layer down: Fn
- * must sit above Mac so Mac cannot swallow Fn's keys, MacFn above Fn and Num above
- * MacFn so each can override the one below it, and spare layers last (ZMK numbers
- * enabled layers first). Bump CONFIG_CRUSH80_KEYMAP_REV when you change the layer
+ * The order matters, and it is checked by ZMK from the highest layer down: the Vim
+ * layers sit above Mac but below Fn, so every Fn chord still works in Vim mode; MacFn
+ * is above Fn and Num above MacFn so each can override the one below it; spare layers
+ * come last (ZMK numbers enabled layers first). Bump CONFIG_CRUSH80_KEYMAP_REV when you change the layer
  * list: it clears live edits (VIA, Studio) saved for the old layout.
  */
 
@@ -38,19 +38,19 @@
 #include <dt-bindings/rainy_rgb.h>
 
 #define BASE  0
-#define MAC   1
-#define FN    2
-#define MACFN 3
-#define NUM   4
-#define MACRO  5
-#define VIM    6
-#define VISUAL 7
-#define OPD    8
-#define OPY    9
-#define OPC    10
+#define MAC    1
+#define VIM    2
+#define VISUAL 3
+#define OPD    4
+#define OPY    5
+#define OPC    6
+#define FN     7
+#define MACFN  8
+#define NUM    9
+#define MACRO  10
 
 / {
-	/* Vim editing behaviors (layers 6-10 below). Macros are timed 10 ms per step. */
+	/* Vim editing behaviors (layers 2-6 below; Esc leaves Visual). Macros are timed 10 ms per step. */
 	macros {
 		m_i_big: m_i_big {
 			compatible = "zmk,behavior-macro";
@@ -238,6 +238,16 @@
 	};
 
 	behaviors {
+		/* Like &sl, but waits 3 s for the second key of d / y / c (the default is 1 s) and is
+		 * not cancelled by pressing Shift first. */
+		vsl: vim_sticky_layer {
+			compatible = "zmk,behavior-sticky-key";
+			#binding-cells = <1>;
+			bindings = <&mo>;
+			release-after-ms = <3000>;
+			ignore-modifiers;
+		};
+
 		vim_g: vim_g {
 			compatible = "zmk,behavior-mod-morph";
 			#binding-cells = <0>;
@@ -276,21 +286,21 @@
 		vim_d: vim_d {
 			compatible = "zmk,behavior-mod-morph";
 			#binding-cells = <0>;
-			bindings = <&sl OPD>, <&m_d_big>;
+			bindings = <&vsl OPD>, <&m_d_big>;
 			mods = <(MOD_LSFT|MOD_RSFT)>;
 		};
 
 		vim_c: vim_c {
 			compatible = "zmk,behavior-mod-morph";
 			#binding-cells = <0>;
-			bindings = <&sl OPC>, <&m_c_big>;
+			bindings = <&vsl OPC>, <&m_c_big>;
 			mods = <(MOD_LSFT|MOD_RSFT)>;
 		};
 
 		vim_y: vim_y {
 			compatible = "zmk,behavior-mod-morph";
 			#binding-cells = <0>;
-			bindings = <&sl OPY>, <&op_yy>;
+			bindings = <&vsl OPY>, <&op_yy>;
 			mods = <(MOD_LSFT|MOD_RSFT)>;
 		};
 
@@ -1060,7 +1070,7 @@
 		compatible = "zmk,keymap";
 
 		/*
-		 * Layer 0: Base. Plain 80%, nothing else. Fn opens layer 2.
+		 * Layer 0: Base. Plain 80%, nothing else. Fn opens layer 7.
 		 */
 		default_layer {
 			display-name = "Base";
@@ -1094,92 +1104,7 @@
 		};
 
 		/*
-		 * Layer 2: Fn (hold). The highest of the layers you hold, so nothing above it
-		 * can hide these keys.
-		 *
-		 *   system       Esc recovery     F12 Studio unlock   PrtSc/ScrLk/Pause mute vol+ bri+
-		 *                Ins/Home/PgUp prev play next   End/PgDn vol- bri-
-		 *   connection   1 2 3 6 7 Bluetooth 1-5   4 USB   5 toggle USB/Bluetooth   Del clear BT pairing
-		 *   RGB          Bspc on/off   - = speed   [ ] hue   \ Enter effect   Up/Down brightness   B battery
-		 *   modes        M Mac mode
-		 *   navigation   H J K L arrows   U O Home End   Y N PgUp PgDn   X Bspc   ; Del
-		 *   jumps        A D word left / right   W S paragraph up / down
-		 *   Space        hold for the Num layer
-		 *
-		 * Shift, Ctrl, Alt and Cmd stay as they are, so Shift+Fn+L selects and
-		 * Shift+Fn+D selects a word. A D W S send Ctrl+Left / Right / Up / Down
-		 * (the Mac-specific versions live on layer 3, which the right Win key holds).
-		 */
-		fn_layer {
-			display-name = "Fn";
-			bindings = <
-				&bootloader      &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &studio_unlock   &trans           &kp C_MUTE       &kp C_VOL_UP     &kp C_BRI_UP
-				&trans           &bt BT_SEL 0     &bt BT_SEL 1     &bt BT_SEL 2     &out OUT_USB     &out OUT_TOG     &bt BT_SEL 3     &bt BT_SEL 4     &trans           &trans           &trans           &rgb RGB_SPD     &rgb RGB_SPI     &rgb RGB_TOG     &kp C_PREV       &kp C_PP         &kp C_NEXT
-				&trans           &trans           &kp LC(UP)       &trans           &trans           &trans           &kp PG_UP        &kp HOME         &trans           &kp END          &trans           &rgb RGB_HUD     &rgb RGB_HUI     &rgb RGB_EFF     &bt BT_CLR       &kp C_VOL_DN     &kp C_BRI_DN
-				&trans           &kp LC(LEFT)     &kp LC(DOWN)     &kp LC(RIGHT)    &trans           &trans           &kp LEFT         &kp DOWN         &kp UP           &kp RIGHT        &kp DEL          &trans           &rgb RGB_EFF
-				&trans           &trans           &kp BSPC         &trans           &tog VIM         &rgb RGB_BAT     &kp PG_DN        &tog MAC         &trans           &trans           &trans           &trans           &rgb RGB_BRI
-				&trans           &trans           &trans           &mo NUM          &trans           &trans           &trans           &trans           &trans           &rgb RGB_BRD     &trans
-			>;
-		};
-
-		/*
-		 * Layer 3: MacFn. Held by the right Win key (your numpad on the nav cluster).
-		 * It is a plain held layer: an earlier conditional layer for it forced it off
-		 * whenever Mac mode was not on, which made the numpad and the macro layer
-		 * (Space on this layer) unreachable.
-		 * U / O become Cmd+Left / Right, so Fn+U / O still mean start / end of line,
-		 * and A D W S become Option+arrows (word and paragraph, the Mac way).
-		 */
-		mac_fn_layer {
-			display-name = "MacFn";
-			bindings = <
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp N0           &kp N7           &kp N8           &kp N9
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp N4           &kp N5           &kp N6
-				&trans           &trans           &kp LA(UP)       &trans           &trans           &trans           &trans           &kp LG(LEFT)     &trans           &kp LG(RIGHT)    &trans           &trans           &trans           &trans           &kp N1           &kp N2           &kp N3
-				&trans           &kp LA(LEFT)     &kp LA(DOWN)     &kp LA(RIGHT)    &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &trans           &trans           &mo MACRO        &trans           &trans           &trans           &trans           &trans           &trans           &trans
-			>;
-		};
-
-		/*
-		 * Layer 4: Num (hold Fn and Space). Above Fn so it can reuse the HJKL block.
-		 *
-		 *   right hand  7 8 9 -  /  4 5 6 + =  /  0 1 2 3 .      [ * ]  /  Enter
-		 *   left hand   ~ ! @ # $  /  ( ) { } |  /  [ ] < > \
-
-		 */
-		num_layer {
-			display-name = "Num";
-			bindings = <
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &kp LS(GRAVE)    &kp LS(N1)       &kp LS(N2)       &kp LS(N3)       &kp LS(N4)       &trans           &kp N7           &kp N8           &kp N9           &kp MINUS        &kp LS(N8)       &kp FSLH         &trans           &trans           &trans           &trans
-				&trans           &kp LS(N9)       &kp LS(N0)       &kp LS(LBKT)     &kp LS(RBKT)     &kp LS(BSLH)     &trans           &kp N4           &kp N5           &kp N6           &kp LS(EQUAL)    &kp EQUAL        &kp RET
-				&trans           &kp LBKT         &kp RBKT         &kp LS(COMMA)    &kp LS(DOT)      &kp BSLH         &kp N0           &kp N1           &kp N2           &kp N3           &kp DOT          &trans           &trans
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-			>;
-		};
-
-		/*
-		 * Layer 5: Macro (hold right Win, then Space). P plays macro 0 (edit it in VIA).
-		 * A real layer, not a spare one: ZMK only looks up keys in layers that are
-		 * in the keymap file, so a macro key on a reserved spare layer never fires.
-		 */
-		macro_layer {
-			display-name = "Macro";
-			bindings = <
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &vmacro 0        &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-			>;
-		};
-
-		/*
-		 * Layer 6: Vim (normal mode, Fn+V toggles it). Text editing anywhere: motions, delete,
+		 * Layer 2: Vim (normal mode, Fn+V toggles it). Text editing anywhere: motions, delete,
 		 * yank, paste and undo on the usual shortcuts. Keys with no vim meaning do nothing, so
 		 * you cannot type by accident; i / a / o / s (or Fn+V) go back to typing. Windows and
 		 * Linux shortcuts (Ctrl); on a Mac use the Option/Cmd versions by hand.
@@ -1203,11 +1128,11 @@
 			>;
 		};
 
-		/* Layer 7: Visual (v in Vim). Motions select; y copies, d / x cuts, c cuts and types, p pastes over. */
+		/* Layer 3: Visual (v in Vim). Motions select; y copies, d / x cuts, c cuts and types, p pastes over; Esc or v cancels. */
 		visual_layer {
 			display-name = "Visual";
 			bindings = <
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&vis_end         &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
 				&ps_GRAVE        &ps_N1           &ps_N2           &ps_N3           &ps_N4           &ps_N5           &ps_N6           &ps_N7           &ps_N8           &ps_N9           &ps_N0           &ps_MINUS        &ps_EQUAL        &trans           &trans           &trans           &trans
 				&trans           &ps_Q            &ps_W            &ps_E            &ps_R            &ps_T            &ps_Y            &ps_U            &ps_I            &ps_O            &ps_P            &ps_LBKT         &ps_RBKT         &ps_BSLH         &trans           &trans           &trans
 				&trans           &ps_A            &ps_S            &ps_D            &ps_F            &ps_G            &ps_H            &ps_J            &ps_K            &ps_L            &ps_SEMI         &ps_SQT          &trans
@@ -1216,7 +1141,7 @@
 			>;
 		};
 
-		/* Layer 8: d pressed in Vim. Lasts one key: d line, w word, 4 to end, 0 to start. */
+		/* Layer 4: d pressed in Vim. Lasts one key: d line, w word, 4 to end, 0 to start. */
 		opd_layer {
 			display-name = "OpD";
 			bindings = <
@@ -1229,7 +1154,7 @@
 			>;
 		};
 
-		/* Layer 9: y pressed in Vim. Lasts one key: y line, w word, 4 to end. */
+		/* Layer 5: y pressed in Vim. Lasts one key: y line, w word, 4 to end. */
 		opy_layer {
 			display-name = "OpY";
 			bindings = <
@@ -1242,7 +1167,7 @@
 			>;
 		};
 
-		/* Layer 10: c pressed in Vim. Lasts one key: c line, w word, 4 to end; then you are typing. */
+		/* Layer 6: c pressed in Vim. Lasts one key: c line, w word, 4 to end; then you are typing. */
 		opc_layer {
 			display-name = "OpC";
 			bindings = <
@@ -1251,6 +1176,91 @@
 				&trans           &none            &op_cw           &op_cw           &none            &none            &none            &none            &none            &none            &none            &none            &none            &none            &trans           &trans           &trans
 				&trans           &none            &none            &none            &none            &none            &none            &none            &none            &none            &none            &none            &trans
 				&trans           &none            &none            &op_cc           &none            &none            &none            &none            &none            &none            &none            &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/*
+		 * Layer 7: Fn (hold). The highest of the layers you hold, so nothing above it
+		 * can hide these keys.
+		 *
+		 *   system       Esc recovery     F12 Studio unlock   PrtSc/ScrLk/Pause mute vol+ bri+
+		 *                Ins/Home/PgUp prev play next   End/PgDn vol- bri-
+		 *   connection   1 2 3 6 7 Bluetooth 1-5   4 USB   5 toggle USB/Bluetooth   Del clear BT pairing
+		 *   RGB          Bspc on/off   - = speed   [ ] hue   \ Enter effect   Up/Down brightness   B battery
+		 *   modes        M Mac mode
+		 *   navigation   H J K L arrows   U O Home End   Y N PgUp PgDn   X Bspc   ; Del
+		 *   jumps        A D word left / right   W S paragraph up / down
+		 *   Space        hold for the Num layer
+		 *
+		 * Shift, Ctrl, Alt and Cmd stay as they are, so Shift+Fn+L selects and
+		 * Shift+Fn+D selects a word. A D W S send Ctrl+Left / Right / Up / Down
+		 * (the Mac-specific versions live on layer 8, which the right Win key holds).
+		 */
+		fn_layer {
+			display-name = "Fn";
+			bindings = <
+				&bootloader      &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &studio_unlock   &trans           &kp C_MUTE       &kp C_VOL_UP     &kp C_BRI_UP
+				&trans           &bt BT_SEL 0     &bt BT_SEL 1     &bt BT_SEL 2     &out OUT_USB     &out OUT_TOG     &bt BT_SEL 3     &bt BT_SEL 4     &trans           &trans           &trans           &rgb RGB_SPD     &rgb RGB_SPI     &rgb RGB_TOG     &kp C_PREV       &kp C_PP         &kp C_NEXT
+				&trans           &trans           &kp LC(UP)       &trans           &trans           &trans           &kp PG_UP        &kp HOME         &trans           &kp END          &trans           &rgb RGB_HUD     &rgb RGB_HUI     &rgb RGB_EFF     &bt BT_CLR       &kp C_VOL_DN     &kp C_BRI_DN
+				&trans           &kp LC(LEFT)     &kp LC(DOWN)     &kp LC(RIGHT)    &trans           &trans           &kp LEFT         &kp DOWN         &kp UP           &kp RIGHT        &kp DEL          &trans           &rgb RGB_EFF
+				&trans           &trans           &kp BSPC         &trans           &tog VIM         &rgb RGB_BAT     &kp PG_DN        &tog MAC         &trans           &trans           &trans           &trans           &rgb RGB_BRI
+				&trans           &trans           &trans           &mo NUM          &trans           &trans           &trans           &trans           &trans           &rgb RGB_BRD     &trans
+			>;
+		};
+
+		/*
+		 * Layer 8: MacFn. Held by the right Win key (your numpad on the nav cluster).
+		 * It is a plain held layer: an earlier conditional layer for it forced it off
+		 * whenever Mac mode was not on, which made the numpad and the macro layer
+		 * (Space on this layer) unreachable.
+		 * U / O become Cmd+Left / Right, so Fn+U / O still mean start / end of line,
+		 * and A D W S become Option+arrows (word and paragraph, the Mac way).
+		 */
+		mac_fn_layer {
+			display-name = "MacFn";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp N0           &kp N7           &kp N8           &kp N9
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &kp N4           &kp N5           &kp N6
+				&trans           &trans           &kp LA(UP)       &trans           &trans           &trans           &trans           &kp LG(LEFT)     &trans           &kp LG(RIGHT)    &trans           &trans           &trans           &trans           &kp N1           &kp N2           &kp N3
+				&trans           &kp LA(LEFT)     &kp LA(DOWN)     &kp LA(RIGHT)    &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &mo MACRO        &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/*
+		 * Layer 9: Num (hold Fn and Space). Above Fn so it can reuse the HJKL block.
+		 *
+		 *   right hand  7 8 9 -  /  4 5 6 + =  /  0 1 2 3 .      [ * ]  /  Enter
+		 *   left hand   ~ ! @ # $  /  ( ) { } |  /  [ ] < > \
+
+		 */
+		num_layer {
+			display-name = "Num";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &kp LS(GRAVE)    &kp LS(N1)       &kp LS(N2)       &kp LS(N3)       &kp LS(N4)       &trans           &kp N7           &kp N8           &kp N9           &kp MINUS        &kp LS(N8)       &kp FSLH         &trans           &trans           &trans           &trans
+				&trans           &kp LS(N9)       &kp LS(N0)       &kp LS(LBKT)     &kp LS(RBKT)     &kp LS(BSLH)     &trans           &kp N4           &kp N5           &kp N6           &kp LS(EQUAL)    &kp EQUAL        &kp RET
+				&trans           &kp LBKT         &kp RBKT         &kp LS(COMMA)    &kp LS(DOT)      &kp BSLH         &kp N0           &kp N1           &kp N2           &kp N3           &kp DOT          &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/*
+		 * Layer 10: Macro (hold right Win, then Space). P plays macro 0 (edit it in VIA).
+		 * A real layer, not a spare one: ZMK only looks up keys in layers that are
+		 * in the keymap file, so a macro key on a reserved spare layer never fires.
+		 */
+		macro_layer {
+			display-name = "Macro";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &vmacro 1        &trans           &trans           &trans           &trans           &trans           &trans           &vmacro 0        &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
 				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
 			>;
 		};

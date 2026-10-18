@@ -1,6 +1,7 @@
 #!/bin/bash
 # Build and run every host test (no Zephyr or hardware needed): the VIA keycode
-# translation, the macro player and the keymap revision migration. The firmware sources
+# translation, the macro player and the keymap revision migration, plus the static
+# keymap check (scripts/check_keymap.py). The firmware sources
 # are compiled against the small Zephyr stand-ins in mock/ and run under
 # AddressSanitizer + UBSan, so an out-of-bounds access fails the test.
 # Needs a C compiler and the ZMK sources (for dt-bindings/zmk/keys.h):
@@ -25,3 +26,4 @@ run() { # name, extra sources...
 run via_xlat "$HERE/../src/via/via_xlat.c"
 run via_macro "$HERE/../src/via/via_xlat.c" "$HERE/mock/mock.c"
 run keymap_rev "$HERE/mock/mock.c"
+ZMK_INCLUDE="$ZMK_INCLUDE" python3 "$HERE/../../scripts/check_keymap.py"
