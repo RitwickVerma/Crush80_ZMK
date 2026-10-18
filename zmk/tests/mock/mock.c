@@ -92,6 +92,8 @@ int mock_delete_fail_count; /* fail this many settings_delete() calls, then reco
 char mock_deleted[MOCK_MAX_SETTINGS][48];
 int mock_deleted_count;
 int mock_saved_count;
+int mock_lock_held;
+int mock_deadlocks;
 void (*mock_on_save)(const char *name, const void *value, size_t len);
 
 static struct mock_setting *find(const char *name) {
@@ -127,10 +129,16 @@ void mock_settings_reset(void) {
     mock_delete_fail_count = 0;
     mock_deleted_count = 0;
     mock_saved_count = 0;
+    mock_lock_held = 0;
+    mock_deadlocks = 0;
     mock_on_save = NULL;
 }
 
 int settings_save_one(const char *name, const void *value, size_t len) {
+    if (mock_lock_held) {
+        mock_deadlocks++;
+        return -35;
+    }
     if (mock_on_save) {
         mock_on_save(name, value, len);
     }
@@ -143,6 +151,10 @@ int settings_save_one(const char *name, const void *value, size_t len) {
 }
 
 int settings_delete(const char *name) {
+    if (mock_lock_held) {
+        mock_deadlocks++;
+        return -35;
+    }
     if (mock_delete_fail_count > 0) {
         mock_delete_fail_count--;
         return -5;
@@ -175,6 +187,10 @@ int settings_load_subtree_direct(const char *subtree,
                                  void *param) {
     size_t n = strlen(subtree);
 
+    if (mock_lock_held) {
+        mock_deadlocks++;
+        return -35;
+    }
     /* Copy: the callback may delete entries. */
     struct mock_setting snap[MOCK_MAX_SETTINGS];
     int count = mock_store_count;

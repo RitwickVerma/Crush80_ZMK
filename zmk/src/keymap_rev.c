@@ -34,11 +34,16 @@ static int rev_set(const char *name, size_t len, settings_read_cb read_cb, void 
 }
 
 static void migrate_fn(struct k_work *work);
-static K_WORK_DEFINE(migrate_work, migrate_fn);
+static K_WORK_DELAYABLE_DEFINE(migrate_work, migrate_fn);
 
-/* Called once settings_load() has read everything (main(), after this file's init). */
+/* Called once settings_load() has read everything, but still inside it: Zephyr holds the
+ * settings lock while commit handlers run, and the migration needs that lock to read and
+ * delete settings. Work submitted from here starts at once on the system work queue and
+ * would wait for the lock the main thread holds, while the main thread goes on to wait for
+ * that queue: a deadlock (the keyboard then reset every 11 s on the boot watchdog). So only
+ * schedule it, a few seconds out, after settings_load() has returned and released the lock. */
 static int rev_commit(void) {
-    k_work_submit(&migrate_work);
+    k_work_schedule(&migrate_work, K_SECONDS(3));
     return 0;
 }
 

@@ -104,8 +104,29 @@ and `- + = * /` on P ; ' [ ]. Left hand: `~ ! @ # $` on Q-T, `( ) { } |` on A-G,
 **Hold the right Win key: numpad on the nav cluster**
 
 Ins Home PgUp = `4 5 6`, Del End PgDn = `1 2 3`, and F13 PrtSc ScrLk Pause = `0 7 8 9`.
-Hold Space as well to reach the **Macro** layer (layer 5): P plays macro 0 (edit it in VIA).
+Hold Space as well to reach the **Macro** layer (layer 10): P plays macro 0 (edit it in VIA).
 The right Win key does not type Win; the left one does.
+
+**Vim editing (Fn+V toggles it):** vim's normal mode in any text field, not only in vim. Esc and
+H J K L glow cyan while it is on (magenta in visual mode, amber while a `d`, `y` or `c` waits for its
+second key). Keys with no meaning do nothing, so you cannot type by accident.
+
+| Keys | Action | Keys | Action |
+|---|---|---|---|
+| h j k l | arrows | w e / b | word right / left |
+| 0 / 4 | line start / end (`$`) | [ ] | paragraph up / down |
+| g / G | top / bottom of the file | / n | find / next |
+| x / X | delete / backspace | u / U or r | undo / redo |
+| dd dw d4 d0 | delete line / word / to end / to start | yy yw y4 | copy line / word / to end |
+| cc cw c4 | change (delete, then type) | D C Y | delete to end / change to end / copy line |
+| p | paste | v / V | visual select / select line |
+| i I a A | type before / at line start / after / at line end | o O s | new line below / above / replace character |
+
+In visual mode h j k l w b 0 4 g extend the selection; y copies, d or x cuts, c cuts and types, p pastes
+over it, v or Esc cancels. Ctrl, Alt and Win shortcuts keep working in every vim mode (Ctrl+C is still copy).
+Differences from real vim: no counts, `gg` is a single `g`, `4` is `$`, and the shortcuts are the Windows and
+Linux ones (Ctrl), so on a Mac mode use them by hand. Do not use it in a terminal, where `y` and `d` send Ctrl+C and Ctrl+X, which
+are interrupt and a shell key there.
 
 **Mac mode (Fn+M):** Win and Alt swap to give Ctrl Opt Cmd in Apple's order, PrtSc
 takes a Cmd+Shift+4 screenshot, and Home / End move to the start / end of the line.
@@ -126,7 +147,7 @@ The keymap is [`config/crush80.keymap`](config/crush80.keymap). Ways to change i
   hold-tap timings are not available there.
 - **[ZMK Studio](https://zmk.studio)** (Bluetooth): open it in Chrome or Edge,
   connect to the keyboard, then press Fn+F12 to unlock. Studio can also add up to
-  three new layers (VIA shows the same three as spare layers 6-8). Combos, macros and hold-tap timings are not editable there
+  three new layers (VIA shows the same three as spare layers 11-13). Combos, macros and hold-tap timings are not editable there
   either.
 - **The keymap file**: edit it, or point `CRUSH80_KEYMAP` at your own file, then
   reflash with `python3 scripts/force_recovery.py`, replug USB,

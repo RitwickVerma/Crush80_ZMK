@@ -9,14 +9,16 @@
  *   hold Fn and Space    numpad and bracket symbols
  *   hold right Win       numpad on the nav cluster; add Space for the Macro layer (P)
  *   Fn+M                 Mac mode on / off (modifiers in Mac order, Cmd shortcuts)
+ *   Fn+V                 Vim editing on / off (layers 2-6: hjkl, dd, yy, p, u, v ...)
  *
  * Layers (the number is what VIA and ZMK Studio show)
- *   0 Base    1 Mac     2 Fn      3 MacFn   4 Num     5 Macro   6-8 spare (empty, yours)
+ *   0 Base    1 Mac     2 Vim     3 Visual  4-6 OpD OpY OpC (d y c, last one key)
+ *   7 Fn      8 MacFn   9 Num     10 Macro  11-13 spare (empty, yours)
  *
- * The order matters, and it is checked by ZMK from the highest layer down: Fn
- * must sit above Mac so Mac cannot swallow Fn's keys, MacFn above Fn and Num above
- * MacFn so each can override the one below it, and spare layers last (ZMK numbers
- * enabled layers first). Bump CONFIG_CRUSH80_KEYMAP_REV when you change the layer
+ * The order matters, and it is checked by ZMK from the highest layer down: the Vim
+ * layers sit above Mac but below Fn, so every Fn chord still works in Vim mode; MacFn
+ * is above Fn and Num above MacFn so each can override the one below it; spare layers
+ * come last (ZMK numbers enabled layers first). Bump CONFIG_CRUSH80_KEYMAP_REV when you change the layer
  * list: it clears live edits (VIA, Studio) saved for the old layout.
  */
 
@@ -36,18 +38,1039 @@
 #include <dt-bindings/rainy_rgb.h>
 
 #define BASE  0
-#define MAC   1
-#define FN    2
-#define MACFN 3
-#define NUM   4
-#define MACRO 5
+#define MAC    1
+#define VIM    2
+#define VISUAL 3
+#define OPD    4
+#define OPY    5
+#define OPC    6
+#define FN     7
+#define MACFN  8
+#define NUM    9
+#define MACRO  10
 
 / {
+	/* Vim editing behaviors (layers 2-6 below; Esc leaves Visual). Macros are timed 10 ms per step. */
+	macros {
+		m_i_big: m_i_big {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp HOME &tog VIM>;
+		};
+
+		m_a: m_a {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp RIGHT &tog VIM>;
+		};
+
+		m_a_big: m_a_big {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp END &tog VIM>;
+		};
+
+		m_o: m_o {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp END &kp RET &tog VIM>;
+		};
+
+		m_o_big: m_o_big {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp HOME &kp RET &kp UP &tog VIM>;
+		};
+
+		vim_s: vim_s {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp DEL &tog VIM>;
+		};
+
+		m_d_big: m_d_big {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LS(END) &kp DEL>;
+		};
+
+		m_c_big: m_c_big {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LS(END) &kp DEL &tog VIM>;
+		};
+
+		m_vline: m_vline {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp HOME &kp LS(END) &tog VISUAL>;
+		};
+
+		op_dd: op_dd {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp HOME &kp LS(END) &kp LC(X) &kp DEL>;
+		};
+
+		op_d_end: op_d_end {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LS(END) &kp DEL>;
+		};
+
+		op_d_home: op_d_home {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LS(HOME) &kp DEL>;
+		};
+
+		op_yy: op_yy {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp HOME &kp LS(END) &kp LC(C) &kp LEFT>;
+		};
+
+		op_yw: op_yw {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LC(LS(RIGHT)) &kp LC(C) &kp LEFT>;
+		};
+
+		op_y_end: op_y_end {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LS(END) &kp LC(C) &kp LEFT>;
+		};
+
+		op_cc: op_cc {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp HOME &kp LS(END) &kp DEL &tog VIM>;
+		};
+
+		op_cw: op_cw {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LC(DEL) &tog VIM>;
+		};
+
+		op_c_end: op_c_end {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LS(END) &kp DEL &tog VIM>;
+		};
+
+		vis_y: vis_y {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LC(C) &kp LEFT &tog VISUAL>;
+		};
+
+		vis_d: vis_d {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LC(X) &tog VISUAL>;
+		};
+
+		vis_c: vis_c {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LC(X) &tog VISUAL &tog VIM>;
+		};
+
+		vis_p: vis_p {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp LC(V) &tog VISUAL>;
+		};
+
+		vis_end: vis_end {
+			compatible = "zmk,behavior-macro";
+			#binding-cells = <0>;
+			wait-ms = <10>;
+			tap-ms = <10>;
+			bindings = <&kp RIGHT &tog VISUAL>;
+		};
+	};
+
+	behaviors {
+		/* Like &sl, but waits 3 s for the second key of d / y / c (the default is 1 s) and is
+		 * not cancelled by pressing Shift first. */
+		vsl: vim_sticky_layer {
+			compatible = "zmk,behavior-sticky-key";
+			#binding-cells = <1>;
+			bindings = <&mo>;
+			release-after-ms = <3000>;
+			ignore-modifiers;
+		};
+
+		vim_g: vim_g {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(HOME)>, <&kp LC(END)>;
+			mods = <(MOD_LSFT|MOD_RSFT)>;
+		};
+
+		vim_x: vim_x {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp DEL>, <&kp BSPC>;
+			mods = <(MOD_LSFT|MOD_RSFT)>;
+		};
+
+		vim_i: vim_i {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&tog VIM>, <&m_i_big>;
+			mods = <(MOD_LSFT|MOD_RSFT)>;
+		};
+
+		vim_a: vim_a {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&m_a>, <&m_a_big>;
+			mods = <(MOD_LSFT|MOD_RSFT)>;
+		};
+
+		vim_o: vim_o {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&m_o>, <&m_o_big>;
+			mods = <(MOD_LSFT|MOD_RSFT)>;
+		};
+
+		vim_d: vim_d {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vsl OPD>, <&m_d_big>;
+			mods = <(MOD_LSFT|MOD_RSFT)>;
+		};
+
+		vim_c: vim_c {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vsl OPC>, <&m_c_big>;
+			mods = <(MOD_LSFT|MOD_RSFT)>;
+		};
+
+		vim_y: vim_y {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vsl OPY>, <&op_yy>;
+			mods = <(MOD_LSFT|MOD_RSFT)>;
+		};
+
+		vim_v: vim_v {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&tog VISUAL>, <&m_vline>;
+			mods = <(MOD_LSFT|MOD_RSFT)>;
+		};
+
+		/* Vim and Visual: a key pressed with Ctrl, Alt or Win held is just that key, so Ctrl+C,
+		 * Ctrl+W, Alt+Tab, Win+E and the like keep working. */
+		pv_H: pv_H {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LEFT>, <&kp H>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_J: pv_J {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp DOWN>, <&kp J>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_K: pv_K {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp UP>, <&kp K>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_L: pv_L {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp RIGHT>, <&kp L>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_W: pv_W {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(RIGHT)>, <&kp W>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_E: pv_E {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(RIGHT)>, <&kp E>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_B: pv_B {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(LEFT)>, <&kp B>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_N0: pv_N0 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp HOME>, <&kp N0>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_N4: pv_N4 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp END>, <&kp N4>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_LBKT: pv_LBKT {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(UP)>, <&kp LBKT>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_RBKT: pv_RBKT {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(DOWN)>, <&kp RBKT>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_FSLH: pv_FSLH {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(F)>, <&kp FSLH>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_G: pv_G {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vim_g>, <&kp G>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_X: pv_X {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vim_x>, <&kp X>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_U: pv_U {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(Z)>, <&kp U>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_R: pv_R {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(Y)>, <&kp R>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_P: pv_P {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(V)>, <&kp P>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_N: pv_N {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp F3>, <&kp N>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_I: pv_I {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vim_i>, <&kp I>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_A: pv_A {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vim_a>, <&kp A>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_O: pv_O {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vim_o>, <&kp O>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_S: pv_S {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vim_s>, <&kp S>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_D: pv_D {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vim_d>, <&kp D>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_C: pv_C {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vim_c>, <&kp C>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_Y: pv_Y {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vim_y>, <&kp Y>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_V: pv_V {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vim_v>, <&kp V>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_F: pv_F {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp F>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_M: pv_M {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp M>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_Q: pv_Q {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp Q>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_T: pv_T {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp T>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_Z: pv_Z {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp Z>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_N1: pv_N1 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N1>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_N2: pv_N2 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N2>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_N3: pv_N3 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N3>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_N5: pv_N5 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N5>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_N6: pv_N6 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N6>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_N7: pv_N7 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N7>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_N8: pv_N8 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N8>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_N9: pv_N9 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N9>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_GRAVE: pv_GRAVE {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp GRAVE>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_MINUS: pv_MINUS {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp MINUS>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_EQUAL: pv_EQUAL {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp EQUAL>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_BSLH: pv_BSLH {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp BSLH>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_SEMI: pv_SEMI {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp SEMI>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_SQT: pv_SQT {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp SQT>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_COMMA: pv_COMMA {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp COMMA>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		pv_DOT: pv_DOT {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp DOT>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_H: ps_H {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LS(LEFT)>, <&kp H>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_J: ps_J {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LS(DOWN)>, <&kp J>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_K: ps_K {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LS(UP)>, <&kp K>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_L: ps_L {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LS(RIGHT)>, <&kp L>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_W: ps_W {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(LS(RIGHT))>, <&kp W>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_E: ps_E {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(LS(RIGHT))>, <&kp E>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_B: ps_B {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(LS(LEFT))>, <&kp B>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_N0: ps_N0 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LS(HOME)>, <&kp N0>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_N4: ps_N4 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LS(END)>, <&kp N4>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_G: ps_G {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(LS(HOME))>, <&kp G>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_LBKT: ps_LBKT {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(LS(UP))>, <&kp LBKT>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_RBKT: ps_RBKT {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&kp LC(LS(DOWN))>, <&kp RBKT>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_Y: ps_Y {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vis_y>, <&kp Y>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_D: ps_D {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vis_d>, <&kp D>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_X: ps_X {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vis_d>, <&kp X>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_C: ps_C {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vis_c>, <&kp C>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_P: ps_P {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vis_p>, <&kp P>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_V: ps_V {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&vis_end>, <&kp V>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_A: ps_A {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp A>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_F: ps_F {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp F>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_I: ps_I {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp I>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_M: ps_M {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp M>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_N: ps_N {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_O: ps_O {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp O>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_Q: ps_Q {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp Q>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_R: ps_R {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp R>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_S: ps_S {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp S>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_T: ps_T {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp T>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_U: ps_U {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp U>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_Z: ps_Z {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp Z>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_N1: ps_N1 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N1>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_N2: ps_N2 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N2>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_N3: ps_N3 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N3>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_N5: ps_N5 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N5>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_N6: ps_N6 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N6>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_N7: ps_N7 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N7>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_N8: ps_N8 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N8>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_N9: ps_N9 {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp N9>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_GRAVE: ps_GRAVE {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp GRAVE>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_MINUS: ps_MINUS {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp MINUS>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_EQUAL: ps_EQUAL {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp EQUAL>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_BSLH: ps_BSLH {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp BSLH>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_SEMI: ps_SEMI {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp SEMI>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_SQT: ps_SQT {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp SQT>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_COMMA: ps_COMMA {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp COMMA>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_DOT: ps_DOT {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp DOT>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+
+		ps_FSLH: ps_FSLH {
+			compatible = "zmk,behavior-mod-morph";
+			#binding-cells = <0>;
+			bindings = <&none>, <&kp FSLH>;
+			mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+			keep-mods = <(MOD_LCTL|MOD_RCTL|MOD_LALT|MOD_RALT|MOD_LGUI|MOD_RGUI)>;
+		};
+	};
+
 	keymap {
 		compatible = "zmk,keymap";
 
 		/*
-		 * Layer 0: Base. Plain 80%, nothing else. Fn opens layer 2.
+		 * Layer 0: Base. Plain 80%, nothing else. Fn opens layer 7.
 		 */
 		default_layer {
 			display-name = "Base";
@@ -81,7 +1104,84 @@
 		};
 
 		/*
-		 * Layer 2: Fn (hold). The highest of the layers you hold, so nothing above it
+		 * Layer 2: Vim (normal mode, Fn+V toggles it). Text editing anywhere: motions, delete,
+		 * yank, paste and undo on the usual shortcuts. Keys with no vim meaning do nothing, so
+		 * you cannot type by accident; i / a / o / s (or Fn+V) go back to typing. Windows and
+		 * Linux shortcuts (Ctrl); on a Mac use the Option/Cmd versions by hand.
+		 *   h j k l  arrows        w e b  word right / right / left      0 4  line start / end ($)
+		 *   [ ]      paragraph     g G    top / bottom of the file        /    find  n next
+		 *   x X      delete / backspace   u (U) undo (redo)   r redo   p paste
+		 *   d y c then d y c / w / 4 / 0   delete / yank / change a line, a word, to the end
+		 *   D C Y    to end of line / change to end / yank line
+		 *   i I a A o O s   back to typing (before, line start, after, line end, new line below / above, replace char)
+		 *   v V      visual: select with h j k l w b 0 4 g, then y d c p, v or Esc to cancel
+		 */
+		vim_layer {
+			display-name = "Vim";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&pv_GRAVE        &pv_N1           &pv_N2           &pv_N3           &pv_N4           &pv_N5           &pv_N6           &pv_N7           &pv_N8           &pv_N9           &pv_N0           &pv_MINUS        &pv_EQUAL        &trans           &trans           &trans           &trans
+				&trans           &pv_Q            &pv_W            &pv_E            &pv_R            &pv_T            &pv_Y            &pv_U            &pv_I            &pv_O            &pv_P            &pv_LBKT         &pv_RBKT         &pv_BSLH         &trans           &trans           &trans
+				&trans           &pv_A            &pv_S            &pv_D            &pv_F            &pv_G            &pv_H            &pv_J            &pv_K            &pv_L            &pv_SEMI         &pv_SQT          &trans
+				&trans           &pv_Z            &pv_X            &pv_C            &pv_V            &pv_B            &pv_N            &pv_M            &pv_COMMA        &pv_DOT          &pv_FSLH         &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/* Layer 3: Visual (v in Vim). Motions select; y copies, d / x cuts, c cuts and types, p pastes over; Esc or v cancels. */
+		visual_layer {
+			display-name = "Visual";
+			bindings = <
+				&vis_end         &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&ps_GRAVE        &ps_N1           &ps_N2           &ps_N3           &ps_N4           &ps_N5           &ps_N6           &ps_N7           &ps_N8           &ps_N9           &ps_N0           &ps_MINUS        &ps_EQUAL        &trans           &trans           &trans           &trans
+				&trans           &ps_Q            &ps_W            &ps_E            &ps_R            &ps_T            &ps_Y            &ps_U            &ps_I            &ps_O            &ps_P            &ps_LBKT         &ps_RBKT         &ps_BSLH         &trans           &trans           &trans
+				&trans           &ps_A            &ps_S            &ps_D            &ps_F            &ps_G            &ps_H            &ps_J            &ps_K            &ps_L            &ps_SEMI         &ps_SQT          &trans
+				&trans           &ps_Z            &ps_X            &ps_C            &ps_V            &ps_B            &ps_N            &ps_M            &ps_COMMA        &ps_DOT          &ps_FSLH         &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/* Layer 4: d pressed in Vim. Lasts one key: d line, w word, 4 to end, 0 to start. */
+		opd_layer {
+			display-name = "OpD";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&none            &none            &none            &none            &op_d_end        &none            &none            &none            &none            &none            &op_d_home       &none            &none            &trans           &trans           &trans           &trans
+				&trans           &none            &kp LC(DEL)      &kp LC(DEL)      &none            &none            &none            &none            &none            &none            &none            &none            &none            &none            &trans           &trans           &trans
+				&trans           &none            &none            &op_dd           &none            &none            &none            &none            &none            &none            &none            &none            &trans
+				&trans           &none            &none            &none            &none            &none            &none            &none            &none            &none            &none            &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/* Layer 5: y pressed in Vim. Lasts one key: y line, w word, 4 to end. */
+		opy_layer {
+			display-name = "OpY";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&none            &none            &none            &none            &op_y_end        &none            &none            &none            &none            &none            &none            &none            &none            &trans           &trans           &trans           &trans
+				&trans           &none            &op_yw           &op_yw           &none            &none            &op_yy           &none            &none            &none            &none            &none            &none            &none            &trans           &trans           &trans
+				&trans           &none            &none            &none            &none            &none            &none            &none            &none            &none            &none            &none            &trans
+				&trans           &none            &none            &none            &none            &none            &none            &none            &none            &none            &none            &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/* Layer 6: c pressed in Vim. Lasts one key: c line, w word, 4 to end; then you are typing. */
+		opc_layer {
+			display-name = "OpC";
+			bindings = <
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+				&none            &none            &none            &none            &op_c_end        &none            &none            &none            &none            &none            &none            &none            &none            &trans           &trans           &trans           &trans
+				&trans           &none            &op_cw           &op_cw           &none            &none            &none            &none            &none            &none            &none            &none            &none            &none            &trans           &trans           &trans
+				&trans           &none            &none            &none            &none            &none            &none            &none            &none            &none            &none            &none            &trans
+				&trans           &none            &none            &op_cc           &none            &none            &none            &none            &none            &none            &none            &trans           &trans
+				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
+			>;
+		};
+
+		/*
+		 * Layer 7: Fn (hold). The highest of the layers you hold, so nothing above it
 		 * can hide these keys.
 		 *
 		 *   system       Esc recovery     F12 Studio unlock   PrtSc/ScrLk/Pause mute vol+ bri+
@@ -95,7 +1195,7 @@
 		 *
 		 * Shift, Ctrl, Alt and Cmd stay as they are, so Shift+Fn+L selects and
 		 * Shift+Fn+D selects a word. A D W S send Ctrl+Left / Right / Up / Down
-		 * (the Mac-specific versions live on layer 3, which the right Win key holds).
+		 * (the Mac-specific versions live on layer 8, which the right Win key holds).
 		 */
 		fn_layer {
 			display-name = "Fn";
@@ -104,13 +1204,13 @@
 				&trans           &bt BT_SEL 0     &bt BT_SEL 1     &bt BT_SEL 2     &out OUT_USB     &out OUT_TOG     &bt BT_SEL 3     &bt BT_SEL 4     &trans           &trans           &trans           &rgb RGB_SPD     &rgb RGB_SPI     &rgb RGB_TOG     &kp C_PREV       &kp C_PP         &kp C_NEXT
 				&trans           &trans           &kp LC(UP)       &trans           &trans           &trans           &kp PG_UP        &kp HOME         &trans           &kp END          &trans           &rgb RGB_HUD     &rgb RGB_HUI     &rgb RGB_EFF     &bt BT_CLR       &kp C_VOL_DN     &kp C_BRI_DN
 				&trans           &kp LC(LEFT)     &kp LC(DOWN)     &kp LC(RIGHT)    &trans           &trans           &kp LEFT         &kp DOWN         &kp UP           &kp RIGHT        &kp DEL          &trans           &rgb RGB_EFF
-				&trans           &trans           &kp BSPC         &trans           &trans           &rgb RGB_BAT     &kp PG_DN        &tog MAC         &trans           &trans           &trans           &trans           &rgb RGB_BRI
+				&trans           &trans           &kp BSPC         &trans           &tog VIM         &rgb RGB_BAT     &kp PG_DN        &tog MAC         &trans           &trans           &trans           &trans           &rgb RGB_BRI
 				&trans           &trans           &trans           &mo NUM          &trans           &trans           &trans           &trans           &trans           &rgb RGB_BRD     &trans
 			>;
 		};
 
 		/*
-		 * Layer 3: MacFn. Held by the right Win key (your numpad on the nav cluster).
+		 * Layer 8: MacFn. Held by the right Win key (your numpad on the nav cluster).
 		 * It is a plain held layer: an earlier conditional layer for it forced it off
 		 * whenever Mac mode was not on, which made the numpad and the macro layer
 		 * (Space on this layer) unreachable.
@@ -130,7 +1230,7 @@
 		};
 
 		/*
-		 * Layer 4: Num (hold Fn and Space). Above Fn so it can reuse the HJKL block.
+		 * Layer 9: Num (hold Fn and Space). Above Fn so it can reuse the HJKL block.
 		 *
 		 *   right hand  7 8 9 -  /  4 5 6 + =  /  0 1 2 3 .      [ * ]  /  Enter
 		 *   left hand   ~ ! @ # $  /  ( ) { } |  /  [ ] < > \
@@ -149,7 +1249,7 @@
 		};
 
 		/*
-		 * Layer 5: Macro (hold right Win, then Space). P plays macro 0 (edit it in VIA).
+		 * Layer 10: Macro (hold right Win, then Space). P plays macro 0 (edit it in VIA).
 		 * A real layer, not a spare one: ZMK only looks up keys in layers that are
 		 * in the keymap file, so a macro key on a reserved spare layer never fires.
 		 */
@@ -158,14 +1258,14 @@
 			bindings = <
 				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
 				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
-				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &vmacro 0        &trans           &trans           &trans           &trans           &trans           &trans
+				&trans           &trans           &trans           &vmacro 1        &trans           &trans           &trans           &trans           &trans           &trans           &vmacro 0        &trans           &trans           &trans           &trans           &trans           &trans
 				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
 				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
 				&trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans           &trans
 			>;
 		};
 
-		/* Layers 6-8: empty slots. VIA shows them as spare layers; ZMK Studio can
+		/* Layers 11-13: empty slots. VIA shows them as spare layers; ZMK Studio can
 		 * turn them into new layers. They must stay last: ZMK numbers the enabled
 		 * layers first, so a real layer placed after a reserved one is never
 		 * looked up. */

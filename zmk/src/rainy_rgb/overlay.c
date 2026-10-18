@@ -18,6 +18,7 @@ static struct rrgb s_fn_px[RRGB_FN_POSITIONS];
 
 static volatile bool     s_caps;
 static volatile bool     s_fn;
+static volatile uint32_t s_mode;   /* 0xRRGGBB, 0 = none */
 static volatile uint8_t  s_battery;
 static volatile uint32_t s_bat_until;
 
@@ -30,11 +31,12 @@ void rrgb_overlay_set_fn(bool active, const struct rrgb *fn_colors) {
     }
     s_fn = active;
 }
+void rrgb_overlay_set_mode(struct rrgb c) { s_mode = ((uint32_t)c.r << 16) | ((uint32_t)c.g << 8) | c.b; }
 void rrgb_overlay_set_battery(uint8_t pct) { s_battery = pct > 100 ? 100 : pct; }
 void rrgb_overlay_battery_show(uint32_t tick) { s_bat_until = tick + BAT_SHOW_FRAMES; }
 
 bool rrgb_overlay_active(uint32_t tick) {
-    return s_caps || s_fn || (tick < s_bat_until);
+    return s_caps || s_fn || s_mode || (tick < s_bat_until);
 }
 
 static void set_pos(struct rrgb *px, uint16_t n, uint8_t pos, struct rrgb c) {
@@ -60,6 +62,15 @@ void rrgb_overlay_render(struct rrgb *px, uint16_t n, uint32_t tick) {
     /* 2. CapsLock: white on the CapsLock key. */
     if (s_caps) {
         set_pos(px, n, CAPS_POS, (struct rrgb){255, 255, 255});
+    }
+    /* 2b. Editing mode: Esc and H J K L, the keys Vim mode is about. */
+    if (s_mode && !s_fn) {
+        struct rrgb c = {(uint8_t)(s_mode >> 16), (uint8_t)(s_mode >> 8), (uint8_t)s_mode};
+        static const uint8_t mode_pos[] = {0, 57, 58, 59, 60}; /* Esc, H, J, K, L */
+
+        for (unsigned i = 0; i < sizeof(mode_pos); i++) {
+            set_pos(px, n, mode_pos[i], c);
+        }
     }
     /* 3. Battery gauge: 10-segment bar on the number row, ~3s window. */
     if (tick < s_bat_until) {
