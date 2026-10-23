@@ -46,5 +46,8 @@ firmware/
 decompiled/
 .DS_Store
 .cursor/
-.claude/
+# Claude Code: personal state stays out, the shared settings and hooks are committed
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
 .serena/
