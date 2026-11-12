@@ -7,6 +7,9 @@
 
 image: debian:stable-slim
 
+default:
+  interruptible: true # A newer push cancels this pipeline's unfinished jobs: the shared runner is busiest exactly when pushes come quickly.
+
 stages: [check]
 
 workflow:
